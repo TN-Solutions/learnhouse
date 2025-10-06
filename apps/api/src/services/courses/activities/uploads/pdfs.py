@@ -1,18 +1,26 @@
-from src.services.utils.upload_content import upload_content
+from src.services.media.upload_preparation import prepare_upload
 
 
 async def upload_pdf(pdf_file, activity_uuid, org_uuid, course_uuid):
     contents = pdf_file.file.read()
-    pdf_format = pdf_file.filename.split(".")[-1]
-
+    file_size = len(contents)
+    
     try:
-        await upload_content(
-            f"courses/{course_uuid}/activities/{activity_uuid}/documentpdf",
-            "orgs",
-            org_uuid,
-            contents,
-            f"documentpdf.{pdf_format}",
+        upload_response = await prepare_upload(
+            file_name=pdf_file.filename or "document.pdf",
+            content_type=pdf_file.content_type or "application/pdf",
+            file_size=file_size,
+            resource_type="activity_pdf",
+            resource_id=activity_uuid,
+            file_category="pdf",
         )
+        
+        return {
+            "upload_url": upload_response.upload_url,
+            "upload_method": upload_response.method,
+            "upload_fields": upload_response.fields,
+            "file_url": upload_response.file_url,
+        }
 
-    except Exception:
-        return {"message": "There was an error uploading the file"}
+    except Exception as e:
+        return {"message": f"There was an error uploading the file: {str(e)}"}

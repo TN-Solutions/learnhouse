@@ -8,6 +8,8 @@ from src.routers.courses import chapters, collections, courses, assignments, cer
 from src.routers.courses.activities import activities, blocks
 from src.routers.ee import cloud_internal, payments
 from src.routers.install import install
+# Import media routers
+from src.routers.media import router as media_router
 from src.services.dev.dev import isDevModeEnabledOrRaise
 from src.services.install.install import isInstallModeEnabled
 from src.routers.utils import router as utils_router
@@ -39,6 +41,8 @@ v1_router.include_router(
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(payments.router, prefix="/payments", tags=["payments"])
+# Media routes
+v1_router.include_router(media_router, prefix="/media", tags=["media"])
 
 if os.environ.get("CLOUD_INTERNAL_KEY"):
     v1_router.include_router(

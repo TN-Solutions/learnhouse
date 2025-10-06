@@ -9,18 +9,27 @@ from config.config import get_learnhouse_config
 def get_chromadb_client():
     """Get cached ChromaDB client instance"""
     LH_CONFIG = get_learnhouse_config()
+
+    # Check if AI is enabled
+    if not LH_CONFIG.ai_config.is_ai_enabled:
+        return None
+
     chromadb_config = getattr(LH_CONFIG.ai_config, 'chromadb_config', None)
-    
+
     if (
-        chromadb_config 
+        chromadb_config
         and isinstance(chromadb_config.db_host, str)
         and chromadb_config.db_host
         and getattr(chromadb_config, 'isSeparateDatabaseEnabled', False)
     ):
-        return chromadb.HttpClient(
-            host=chromadb_config.db_host,
-            port=8000
-        )
+        try:
+            return chromadb.HttpClient(
+                host=chromadb_config.db_host,
+                port=8000
+            )
+        except Exception as e:
+            print(f"Warning: Could not connect to ChromaDB server at {chromadb_config.db_host}:8000 - {e}")
+            return None
     return chromadb.Client()
 
 @lru_cache()

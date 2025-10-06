@@ -33,10 +33,20 @@ class AIConfig(BaseModel):
 class S3ApiConfig(BaseModel):
     bucket_name: str | None
     endpoint_url: str | None
+    access_key_id: str | None
+    secret_access_key: str | None
+    region: str | None
+    presigned_url_expiry: int = 3600  # 1 hour default
+    max_file_size: int = 104857600  # 100MB default
+    access_key_id: str | None
+    secret_access_key: str | None
+    region: str | None
+    presigned_url_expiry: int = 3600  # 1 hour default
+    max_file_size: int = 104857600  # 100MB default
 
 
 class ContentDeliveryConfig(BaseModel):
-    type: Literal["filesystem", "s3api"]
+    type: Literal["s3api"]
     s3api: S3ApiConfig
 
 
@@ -180,13 +190,26 @@ def get_learnhouse_config() -> LearnHouseConfig:
     cookie_config = CookieConfig(domain=cookies_domain)
 
     env_content_delivery_type = os.environ.get("LEARNHOUSE_CONTENT_DELIVERY_TYPE")
-    content_delivery_type: str = env_content_delivery_type or (
+    content_delivery_type_raw = env_content_delivery_type or (
         (yaml_config.get("hosting_config", {}).get("content_delivery", {}).get("type"))
-        or "filesystem"
-    )  # default to filesystem
+        or "s3api"
+    )  # default to S3 API
 
+    # Validate content delivery type
+    if content_delivery_type_raw != "s3api":
+        raise ValueError(f"Invalid content_delivery_type: {content_delivery_type_raw}. Must be 's3api'")
+
+    content_delivery_type: Literal["s3api"] = "s3api"  # type: ignore
+
+    # S3 Configuration
     env_bucket_name = os.environ.get("LEARNHOUSE_S3_API_BUCKET_NAME")
     env_endpoint_url = os.environ.get("LEARNHOUSE_S3_API_ENDPOINT_URL")
+    env_access_key_id = os.environ.get("LEARNHOUSE_S3_API_ACCESS_KEY_ID")
+    env_secret_access_key = os.environ.get("LEARNHOUSE_S3_API_SECRET_ACCESS_KEY")
+    env_region = os.environ.get("LEARNHOUSE_S3_API_REGION")
+    env_presigned_url_expiry = os.environ.get("LEARNHOUSE_S3_API_PRESIGNED_URL_EXPIRY")
+    env_max_file_size = os.environ.get("LEARNHOUSE_S3_API_MAX_FILE_SIZE")
+    
     bucket_name = (
         yaml_config.get("hosting_config", {})
         .get("content_delivery", {})
@@ -199,10 +222,58 @@ def get_learnhouse_config() -> LearnHouseConfig:
         .get("s3api", {})
         .get("endpoint_url")
     ) or env_endpoint_url
+    access_key_id = (
+        yaml_config.get("hosting_config", {})
+        .get("content_delivery", {})
+        .get("s3api", {})
+        .get("access_key_id")
+    ) or env_access_key_id
+    secret_access_key = (
+        yaml_config.get("hosting_config", {})
+        .get("content_delivery", {})
+        .get("s3api", {})
+        .get("secret_access_key")
+    ) or env_secret_access_key
+    region = (
+        yaml_config.get("hosting_config", {})
+        .get("content_delivery", {})
+        .get("s3api", {})
+        .get("region")
+    ) or env_region or "us-east-1"  # default region
+    presigned_url_expiry = int(
+        env_presigned_url_expiry or
+        (yaml_config.get("hosting_config", {})
+         .get("content_delivery", {})
+         .get("s3api", {})
+         .get("presigned_url_expiry")) or 3600
+    )
+    max_file_size = int(
+        env_max_file_size or
+        (yaml_config.get("hosting_config", {})
+         .get("content_delivery", {})
+         .get("s3api", {})
+         .get("max_file_size")) or 104857600
+    )
+
+    # Validate S3 configuration (S3 is now mandatory)
+    if not bucket_name:
+        raise ValueError("S3 bucket name is required")
+    if not access_key_id:
+        raise ValueError("S3 access key ID is required")
+    if not secret_access_key:
+        raise ValueError("S3 secret access key is required")
 
     content_delivery = ContentDeliveryConfig(
         type=content_delivery_type,  # type: ignore
-        s3api=S3ApiConfig(bucket_name=bucket_name, endpoint_url=endpoint_url),  # type: ignore
+        s3api=S3ApiConfig(
+            bucket_name=bucket_name,
+            endpoint_url=endpoint_url,
+            access_key_id=access_key_id,
+            secret_access_key=secret_access_key,
+            region=region,
+            presigned_url_expiry=presigned_url_expiry,
+            max_file_size=max_file_size
+        ),
     )
 
     # Database config

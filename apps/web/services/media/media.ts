@@ -1,4 +1,5 @@
 import { getBackendUrl } from '@services/config/config'
+
 const LEARNHOUSE_MEDIA_URL = process.env.NEXT_PUBLIC_LEARNHOUSE_MEDIA_URL
 
 function getMediaUrl() {
@@ -9,23 +10,45 @@ function getMediaUrl() {
   }
 }
 
+/**
+ * Get media URL from backend response or construct fallback URL
+ * This function is storage-agnostic and works with both filesystem and S3
+ */
+export function getMediaUrlFromFileUrl(fileUrl: string): string {
+  // If fileUrl is already a complete URL (S3), return as-is
+  if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+    return fileUrl
+  }
+
+  // If fileUrl is a relative path, construct full URL
+  if (fileUrl.startsWith('/')) {
+    return `${getMediaUrl()}${fileUrl}`
+  }
+
+  // If fileUrl is a relative path without leading slash
+  return `${getMediaUrl()}/${fileUrl}`
+}
+
+// Legacy functions for backward compatibility
+// These now use the new getMediaUrlFromFileUrl function
+
 export function getCourseThumbnailMediaDirectory(
   orgUUID: string,
   courseUUID: string,
   fileId: string
 ) {
-  let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseUUID}/thumbnails/${fileId}`
-  return uri
+  const legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/thumbnails/${fileId}`
+  return getMediaUrlFromFileUrl(legacyPath)
 }
 
 export function getOrgLandingMediaDirectory(orgUUID: string, fileId: string) {
-  let uri = `${getMediaUrl()}content/orgs/${orgUUID}/landing/${fileId}`
-  return uri
+  const legacyPath = `content/orgs/${orgUUID}/landing/${fileId}`
+  return getMediaUrlFromFileUrl(legacyPath)
 }
 
 export function getUserAvatarMediaDirectory(userUUID: string, fileId: string) {
-  let uri = `${getMediaUrl()}content/users/${userUUID}/avatars/${fileId}`
-  return uri
+  const legacyPath = `content/users/${userUUID}/avatars/${fileId}`
+  return getMediaUrlFromFileUrl(legacyPath)
 }
 
 export function getActivityBlockMediaDirectory(
@@ -36,18 +59,16 @@ export function getActivityBlockMediaDirectory(
   fileId: any,
   type: string
 ) {
+  let legacyPath = ''
   if (type == 'pdfBlock') {
-    let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseId}/activities/${activityId}/dynamic/blocks/pdfBlock/${blockId}/${fileId}`
-    return uri
+    legacyPath = `content/orgs/${orgUUID}/courses/${courseId}/activities/${activityId}/dynamic/blocks/pdfBlock/${blockId}/${fileId}`
+  } else if (type == 'videoBlock') {
+    legacyPath = `content/orgs/${orgUUID}/courses/${courseId}/activities/${activityId}/dynamic/blocks/videoBlock/${blockId}/${fileId}`
+  } else if (type == 'imageBlock') {
+    legacyPath = `content/orgs/${orgUUID}/courses/${courseId}/activities/${activityId}/dynamic/blocks/imageBlock/${blockId}/${fileId}`
   }
-  if (type == 'videoBlock') {
-    let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseId}/activities/${activityId}/dynamic/blocks/videoBlock/${blockId}/${fileId}`
-    return uri
-  }
-  if (type == 'imageBlock') {
-    let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseId}/activities/${activityId}/dynamic/blocks/imageBlock/${blockId}/${fileId}`
-    return uri
-  }
+
+  return getMediaUrlFromFileUrl(legacyPath)
 }
 
 export function getTaskRefFileDir(
@@ -56,11 +77,10 @@ export function getTaskRefFileDir(
   activityUUID: string,
   assignmentUUID: string,
   assignmentTaskUUID: string,
-  fileID : string
-
+  fileID: string
 ) {
-  let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/${fileID}`
-  return uri
+  const legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/${fileID}`
+  return getMediaUrlFromFileUrl(legacyPath)
 }
 
 export function getTaskFileSubmissionDir(
@@ -69,10 +89,10 @@ export function getTaskFileSubmissionDir(
   activityUUID: string,
   assignmentUUID: string,
   assignmentTaskUUID: string,
-  fileSubID : string
+  fileSubID: string
 ) {
-  let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/subs/${fileSubID}`
-  return uri
+  const legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/subs/${fileSubID}`
+  return getMediaUrlFromFileUrl(legacyPath)
 }
 
 export function getActivityMediaDirectory(
@@ -82,27 +102,27 @@ export function getActivityMediaDirectory(
   fileId: string,
   activityType: string
 ) {
+  let legacyPath = ''
   if (activityType == 'video') {
-    let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/video/${fileId}`
-    return uri
+    legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/video/${fileId}`
+  } else if (activityType == 'documentpdf') {
+    legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/documentpdf/${fileId}`
   }
-  if (activityType == 'documentpdf') {
-    let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/documentpdf/${fileId}`
-    return uri
-  }
+
+  return getMediaUrlFromFileUrl(legacyPath)
 }
 
 export function getOrgLogoMediaDirectory(orgUUID: string, fileId: string) {
-  let uri = `${getMediaUrl()}content/orgs/${orgUUID}/logos/${fileId}`
-  return uri
+  const legacyPath = `content/orgs/${orgUUID}/logos/${fileId}`
+  return getMediaUrlFromFileUrl(legacyPath)
 }
 
 export function getOrgThumbnailMediaDirectory(orgUUID: string, fileId: string) {
-  let uri = `${getMediaUrl()}content/orgs/${orgUUID}/thumbnails/${fileId}`
-  return uri
+  const legacyPath = `content/orgs/${orgUUID}/thumbnails/${fileId}`
+  return getMediaUrlFromFileUrl(legacyPath)
 }
 
 export function getOrgPreviewMediaDirectory(orgUUID: string, fileId: string) {
-  let uri = `${getMediaUrl()}content/orgs/${orgUUID}/previews/${fileId}`
-  return uri
+  const legacyPath = `content/orgs/${orgUUID}/previews/${fileId}`
+  return getMediaUrlFromFileUrl(legacyPath)
 }

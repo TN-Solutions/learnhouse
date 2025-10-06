@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from pydantic import BaseModel, EmailStr
 from sqlmodel import Field, SQLModel
 from sqlalchemy import JSON, Column
@@ -48,9 +48,8 @@ class PublicUser(UserRead):
 
 
 class UserRoleWithOrg(BaseModel):
-    from src.db.organizations import OrganizationRead
     role: RoleRead
-    org: OrganizationRead
+    org: Optional[dict] = None
 
 
 class UserSession(BaseModel):
@@ -76,3 +75,6 @@ class User(UserBase, table=True):
     email_verified: bool = False
     creation_date: str = ""
     update_date: str = ""
+
+
+# Forward references will be resolved when models are imported and used

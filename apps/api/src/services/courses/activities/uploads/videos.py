@@ -1,19 +1,27 @@
 
-from src.services.utils.upload_content import upload_content
+from src.services.media.upload_preparation import prepare_upload
 
 
 async def upload_video(video_file, activity_uuid, org_uuid, course_uuid):
     contents = video_file.file.read()
-    video_format = video_file.filename.split(".")[-1]
-
+    file_size = len(contents)
+    
     try:
-        await upload_content(
-            f"courses/{course_uuid}/activities/{activity_uuid}/video",
-            'orgs',
-            org_uuid,
-            contents,
-            f"video.{video_format}",
+        upload_response = await prepare_upload(
+            file_name=video_file.filename or "video.mp4",
+            content_type=video_file.content_type or "video/mp4",
+            file_size=file_size,
+            resource_type="activity_video",
+            resource_id=activity_uuid,
+            file_category="video",
         )
+        
+        return {
+            "upload_url": upload_response.upload_url,
+            "upload_method": upload_response.method,
+            "upload_fields": upload_response.fields,
+            "file_url": upload_response.file_url,
+        }
 
-    except Exception:
-        return {"message": "There was an error uploading the file"}
+    except Exception as e:
+        return {"message": f"There was an error uploading the file: {str(e)}"}

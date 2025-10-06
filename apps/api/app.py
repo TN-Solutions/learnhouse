@@ -63,8 +63,8 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
     )
 
 
-# Static Files
-app.mount("/content", StaticFiles(directory="content"), name="content")
+# Static Files - S3 storage serves files directly from S3, not through the API
+# Static file mounting removed since we now use S3-only storage
 
 # Global Routes
 app.include_router(v1_router)

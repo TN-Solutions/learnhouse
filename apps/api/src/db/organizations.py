@@ -1,10 +1,12 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from pydantic import BaseModel
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 from src.db.roles import RoleRead
-
 from src.db.organization_config import OrganizationConfig
+
+if TYPE_CHECKING:
+    from src.db.users import UserRead
 
 
 class OrganizationBase(SQLModel):
@@ -62,6 +64,8 @@ class OrganizationRead(OrganizationBase):
 
 
 class OrganizationUser(BaseModel):
-    from src.db.users import UserRead
-    user: UserRead
+    user: "UserRead"
     role: RoleRead
+
+
+# Forward references will be resolved when models are imported and used

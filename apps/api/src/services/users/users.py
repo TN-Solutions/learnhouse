@@ -311,21 +311,31 @@ async def update_user_avatar(
     # RBAC check
     await rbac_check(request, current_user, "update", user.user_uuid, db_session)
 
-    # Upload thumbnail
+    # Upload avatar using new media API
     if avatar_file and avatar_file.filename:
-        name_in_disk = (
-            f"{user.user_uuid}_avatar_{uuid4()}.{avatar_file.filename.split('.')[-1]}"
+        from src.services.media.upload_preparation import prepare_upload
+        from src.services.storage.factory import get_storage_backend
+        from config.config import get_learnhouse_config
+        import os
+        
+        # Generate unique filename
+        file_extension = avatar_file.filename.split('.')[-1]
+        unique_filename = f"{user.user_uuid}_avatar_{uuid4()}.{file_extension}"
+        
+        # Prepare upload
+        upload_response = await prepare_upload(
+            file_name=unique_filename,
+            content_type=avatar_file.content_type or "image/jpeg",
+            file_size=avatar_file.size or 0,
+            resource_type="user_avatar",
+            resource_id=user.user_uuid,
+            file_category="image",
         )
-        await upload_avatar(avatar_file, name_in_disk, user.user_uuid)
-
-        # Update course
-        if name_in_disk:
-            user.avatar_image = name_in_disk
-        else:
-            raise HTTPException(
-                status_code=500,
-                detail="Issue with Avatar upload",
-            )
+        
+        # For S3 storage, return presigned URL info
+        # Frontend will handle the actual upload to S3 using the presigned URL
+        # Store the file URL that will be available after frontend upload
+        user.avatar_image = upload_response.file_url
 
     # Update user in database
     db_session.add(user)
@@ -482,7 +492,7 @@ async def get_user_session(
         roles.append(
             UserRoleWithOrg(
                 role=RoleRead.model_validate(role),
-                org=OrganizationRead.model_validate(org),
+                org=OrganizationRead.model_validate(org).model_dump(),
             )
         )
 

@@ -1,4 +1,4 @@
-from src.services.utils.upload_content import upload_content
+from src.services.media.upload_preparation import prepare_upload
 
 
 async def upload_reference_file(
@@ -11,13 +11,31 @@ async def upload_reference_file(
     assignment_task_uuid,
 ):
     contents = file.file.read()
-    file.filename.split(".")[-1]
+    file_size = len(contents)
+    
+    # Determine file category based on content type
+    content_type = file.content_type or "application/octet-stream"
+    if content_type.startswith("image/"):
+        file_category = "image"
+    elif content_type.startswith("video/"):
+        file_category = "video"
+    elif content_type == "application/pdf":
+        file_category = "pdf"
+    else:
+        file_category = "document"
 
-    await upload_content(
-        f"courses/{course_uuid}/activities/{activity_uuid}/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}",
-        "orgs",
-        org_uuid,
-        contents,
-        f"{name_in_disk}",
-        ["pdf", "docx", "mp4", "jpg", "jpeg", "png", "pptx", "zip"],
+    upload_response = await prepare_upload(
+        file_name=name_in_disk,
+        content_type=content_type,
+        file_size=file_size,
+        resource_type="assignment_reference",
+        resource_id=assignment_task_uuid,
+        file_category=file_category,
     )
+    
+    return {
+        "upload_url": upload_response.upload_url,
+        "upload_method": upload_response.method,
+        "upload_fields": upload_response.fields,
+        "file_url": upload_response.file_url,
+    }

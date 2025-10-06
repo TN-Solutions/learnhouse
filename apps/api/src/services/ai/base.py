@@ -20,11 +20,19 @@ from config.config import get_learnhouse_config
 from src.services.ai.init import get_chromadb_client, get_embedding_function, get_llm
 
 LH_CONFIG = get_learnhouse_config()
-client = (
-    chromadb.HttpClient(host=LH_CONFIG.ai_config.chromadb_config.db_host, port=8000)
-    if LH_CONFIG.ai_config.chromadb_config.isSeparateDatabaseEnabled == True
-    else chromadb.Client()
-)
+
+# Initialize ChromaDB client only when AI is enabled
+client = None
+if LH_CONFIG.ai_config.is_ai_enabled:
+    if LH_CONFIG.ai_config.chromadb_config.isSeparateDatabaseEnabled == True:
+        try:
+            client = chromadb.HttpClient(host=LH_CONFIG.ai_config.chromadb_config.db_host, port=8000)
+        except Exception as e:
+            print(f"Warning: Could not connect to ChromaDB server at {LH_CONFIG.ai_config.chromadb_config.db_host}:8000 - {e}")
+            print("AI features will be disabled. ChromaDB server is not running.")
+            client = None
+    else:
+        client = chromadb.Client()
 
 # Use efficient text splitter settings
 TEXT_SPLITTER = CharacterTextSplitter(
@@ -45,6 +53,15 @@ def ask_ai(
     """
     Process an AI query with improved performance using cached components
     """
+    # Check if AI is enabled
+    if not LH_CONFIG.ai_config.is_ai_enabled:
+        raise Exception("AI features are disabled")
+
+    # Get ChromaDB client
+    chromadb_client = get_chromadb_client()
+    if not chromadb_client:
+        raise Exception("ChromaDB client is not available. AI features are disabled.")
+
     # Get embedding function
     embedding_function = get_embedding_function(embedding_model_name)
     if not embedding_function:
@@ -52,12 +69,12 @@ def ask_ai(
 
     # Split text into chunks efficiently
     documents = TEXT_SPLITTER.create_documents([text_reference])
-    
+
     # Create vector store
     db = Chroma.from_documents(
         documents,
         embedding_function,
-        client=get_chromadb_client()
+        client=chromadb_client
     )
     
     # Create retriever tool

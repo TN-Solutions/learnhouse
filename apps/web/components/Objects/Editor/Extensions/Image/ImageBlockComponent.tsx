@@ -1,15 +1,27 @@
 import { NodeViewWrapper } from '@tiptap/react'
 import React, { useEffect } from 'react'
 import { Resizable } from 're-resizable'
-import { AlertTriangle, Image, Download, AlignLeft, AlignCenter, AlignRight, Expand } from 'lucide-react'
-import { uploadNewImageFile } from '../../../../../services/blocks/Image/images'
+import {
+  AlertTriangle,
+  Image,
+  Download,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Expand,
+} from 'lucide-react'
 import { getActivityBlockMediaDirectory } from '@services/media/media'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { FileUploadBlock, FileUploadBlockButton, FileUploadBlockInput } from '../../FileUploadBlock'
-import { constructAcceptValue } from '@/lib/constants';
+import { useFileUpload } from '@hooks/useFileUpload'
+import {
+  FileUploadBlock,
+  FileUploadBlockButton,
+  FileUploadBlockInput,
+} from '../../FileUploadBlock'
+import { constructAcceptValue } from '@/lib/constants'
 import Modal from '@components/Objects/StyledElements/Modal/Modal'
 
 const SUPPORTED_FILES = constructAcceptValue(['image'])
@@ -19,20 +31,22 @@ function ImageBlockComponent(props: any) {
   const course = useCourse() as any
   const editorState = useEditorProvider() as any
   const session = useLHSession() as any
-  const access_token = session?.data?.tokens?.access_token;
+  const access_token = session?.data?.tokens?.access_token
 
   const isEditable = editorState.isEditable
   const [image, setImage] = React.useState(null)
-  const [isLoading, setIsLoading] = React.useState(false)
+  const { upload, isLoading, progress, error } = useFileUpload()
   const [blockObject, setblockObject] = React.useState(
     props.node.attrs.blockObject
   )
   const [imageSize, setImageSize] = React.useState({
     width: props.node.attrs.size ? props.node.attrs.size.width : 300,
   })
-  const [alignment, setAlignment] = React.useState(props.node.attrs.alignment || 'center')
+  const [alignment, setAlignment] = React.useState(
+    props.node.attrs.alignment || 'center'
+  )
   const [isModalOpen, setIsModalOpen] = React.useState(false)
-  
+
   const fileId = blockObject
     ? `${blockObject.content.file_id}.${blockObject.content.file_format}`
     : null
@@ -43,23 +57,62 @@ function ImageBlockComponent(props: any) {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
-    setIsLoading(true)
-    let object = await uploadNewImageFile(
-      image,
-      props.extension.options.activity.activity_uuid,access_token
-    )
-    setIsLoading(false)
-    setblockObject(object)
-    props.updateAttributes({
-      blockObject: object,
-      size: imageSize,
-      alignment: alignment,
+
+    if (!image) return
+
+    const result = await upload({
+      file: image,
+      resourceType: 'activity_block',
+      resourceId: props.extension.options.activity.activity_uuid,
+      fileCategory: 'image',
     })
+
+    if (result.success) {
+      // Create block object in the expected format
+      const object = {
+        block_uuid: props.node.attrs.blockObject?.block_uuid || generateUUID(),
+        content: {
+          file_id: extractFileIdFromUrl(result.fileUrl),
+          file_format: getFileExtension(image.name),
+          file_url: result.fileUrl,
+        },
+        block_type: 'image',
+      }
+
+      setblockObject(object)
+      props.updateAttributes({
+        blockObject: object,
+        size: imageSize,
+        alignment: alignment,
+      })
+    }
+  }
+
+  // Helper functions
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+      /[xy]/g,
+      function (c) {
+        const r = (Math.random() * 16) | 0
+        const v = c === 'x' ? r : (r & 0x3) | 0x8
+        return v.toString(16)
+      }
+    )
+  }
+
+  const extractFileIdFromUrl = (url: string) => {
+    // Extract file ID from URL or generate a unique identifier
+    const parts = url.split('/')
+    return parts[parts.length - 1].split('.')[0]
+  }
+
+  const getFileExtension = (filename: string) => {
+    return filename.split('.').pop()?.toLowerCase() || 'jpg'
   }
 
   const handleDownload = () => {
-    if (!fileId) return;
-    
+    if (!fileId) return
+
     const imageUrl = getActivityBlockMediaDirectory(
       org?.org_uuid,
       course?.courseStructure.course_uuid,
@@ -67,60 +120,70 @@ function ImageBlockComponent(props: any) {
       blockObject.block_uuid,
       fileId,
       'imageBlock'
-    );
-    
-    const link = document.createElement('a');
-    link.href = imageUrl || '';
-    link.download = `image-${blockObject?.block_uuid || 'download'}.${blockObject?.content.file_format || 'jpg'}`;
-    link.setAttribute('download', '');
-    link.setAttribute('target', '_blank');
-    link.setAttribute('rel', 'noopener noreferrer');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    )
+
+    const link = document.createElement('a')
+    link.href = imageUrl || ''
+    link.download = `image-${blockObject?.block_uuid || 'download'}.${blockObject?.content.file_format || 'jpg'}`
+    link.setAttribute('download', '')
+    link.setAttribute('target', '_blank')
+    link.setAttribute('rel', 'noopener noreferrer')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const handleExpand = () => {
-    setIsModalOpen(true);
-  };
+    setIsModalOpen(true)
+  }
 
   const handleAlignmentChange = (newAlignment: string) => {
-    setAlignment(newAlignment);
+    setAlignment(newAlignment)
     props.updateAttributes({
       alignment: newAlignment,
-    });
-  };
+    })
+  }
 
-  const imageUrl = blockObject ? getActivityBlockMediaDirectory(
-    org?.org_uuid,
-    course?.courseStructure.course_uuid,
-    props.extension.options.activity.activity_uuid,
-    blockObject.block_uuid,
-    fileId || '',
-    'imageBlock'
-  ) : null;
+  const imageUrl = blockObject
+    ? getActivityBlockMediaDirectory(
+        org?.org_uuid,
+        course?.courseStructure.course_uuid,
+        props.extension.options.activity.activity_uuid,
+        blockObject.block_uuid,
+        fileId || '',
+        'imageBlock'
+      )
+    : null
 
   useEffect(() => {}, [course, org])
 
   const getAlignmentClass = () => {
     switch (alignment) {
       case 'left':
-        return 'justify-start';
+        return 'justify-start'
       case 'right':
-        return 'justify-end';
+        return 'justify-end'
       default:
-        return 'justify-center';
+        return 'justify-center'
     }
-  };
+  }
 
   return (
     <>
       <NodeViewWrapper className="block-image w-full">
-       <FileUploadBlock isEditable={isEditable} isLoading={isLoading} isEmpty={!blockObject} Icon={Image}>
-          <FileUploadBlockInput onChange={handleImageChange} accept={SUPPORTED_FILES} />
-          <FileUploadBlockButton onClick={handleSubmit} disabled={!image}/>
+        <FileUploadBlock
+          isEditable={isEditable}
+          isLoading={isLoading}
+          isEmpty={!blockObject}
+          Icon={Image}
+        >
+          <FileUploadBlockInput
+            onChange={handleImageChange}
+            accept={SUPPORTED_FILES}
+          />
+          <FileUploadBlockButton onClick={handleSubmit} disabled={!image} />
         </FileUploadBlock>
-        
+
         {blockObject && isEditable && (
           <div className={`w-full flex ${getAlignmentClass()}`}>
             <Resizable
@@ -149,7 +212,10 @@ function ImageBlockComponent(props: any) {
               minWidth={200}
               enable={{ right: true }}
               onResizeStop={(e, direction, ref, d) => {
-                const newWidth = Math.min(imageSize.width + d.width, ref.parentElement?.clientWidth || 1000);
+                const newWidth = Math.min(
+                  imageSize.width + d.width,
+                  ref.parentElement?.clientWidth || 1000
+                )
                 props.updateAttributes({
                   size: {
                     width: newWidth,
@@ -233,12 +299,27 @@ function ImageBlockComponent(props: any) {
         )}
 
         {isLoading && (
-          <div>
-            <AlertTriangle color="#e1e0e0" size={50} />
+          <div className="flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-xs bg-gray-200 rounded-full h-2 mb-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <p className="text-sm text-gray-600">Uploading... {progress}%</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-center justify-center p-4">
+            <div className="text-red-600 text-sm">
+              <AlertTriangle size={20} className="inline mr-2" />
+              {error}
+            </div>
           </div>
         )}
       </NodeViewWrapper>
-      
+
       {blockObject && imageUrl && (
         <Modal
           isDialogOpen={isModalOpen}

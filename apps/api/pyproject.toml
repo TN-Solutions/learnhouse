@@ -62,3 +62,8 @@ filterwarnings = [
     "ignore:.*handler names should be lower-case.*",
     "ignore:.*Importing tools from langchain is deprecated.*",
 ]
+
+[dependency-groups]
+dev = [
+    "moto[s3]>=5.0.0",
+]
