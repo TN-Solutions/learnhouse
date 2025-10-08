@@ -196,8 +196,6 @@ LearnHouse is an open-source learning management system (LMS) platform designed 
 - **Real implementation required** - No mocked code
 - **All tests must pass** before push
 - **No confidential data** in repository
-- **English for all technical content**
-- **Vietnamese for user communication** in chat
 
 ### Performance Constraints
 
