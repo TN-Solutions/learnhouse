@@ -11,7 +11,7 @@ import {
 } from '@services/courses/assignments'
 import { getMediaUrlFromFileUrl } from '@services/media/media'
 import { getAPIUrl } from '@services/config/config'
-import { useFileUpload } from '@hooks/useFileUpload'
+import { useFileUpload } from '@/hooks/useFileUpload'
 import { Cloud, Download, File, Info, Loader, UploadCloud } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'

@@ -1,6 +1,3 @@
-from fastapi import APIRouter
-from . import upload, files
+from .router import router
 
-router = APIRouter()
-
-__all__ = ["upload", "files", "router"]
+__all__ = ["router"]

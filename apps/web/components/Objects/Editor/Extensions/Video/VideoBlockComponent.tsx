@@ -20,7 +20,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { useFileUpload } from '@hooks/useFileUpload'
+import { useFileUpload } from '@/hooks/useFileUpload'
 import { constructAcceptValue } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -313,20 +313,6 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
   
   const getFileExtension = (filename: string) => {
     return filename.split('.').pop()?.toLowerCase() || 'mp4'
-  }
-      setBlockObject(newBlockObject)
-      updateAttributes({ blockObject: newBlockObject })
-      setVideo(null)
-
-      // Reset progress after a delay
-      setTimeout(() => {
-        setUploadProgress(0)
-      }, 1000)
-    } catch (err) {
-      setError('Failed to upload video. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
   }
 
   const handleRemove = () => {

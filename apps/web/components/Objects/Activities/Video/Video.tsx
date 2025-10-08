@@ -38,14 +38,8 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
   }, [activity, org])
 
   const getVideoSrc = () => {
-    if (!activity.content?.filename) return ''
-    return getActivityMediaDirectory(
-      org?.org_uuid,
-      course?.course_uuid,
-      activity.activity_uuid,
-      activity.content.filename,
-      'video'
-    )
+    // Use S3 file_url directly (new activities have this)
+    return activity.content?.file_url || ''
   }
 
   return (

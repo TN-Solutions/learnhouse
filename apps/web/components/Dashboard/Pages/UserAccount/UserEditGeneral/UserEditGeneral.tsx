@@ -26,8 +26,8 @@ import {
   Lightbulb
 } from 'lucide-react'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { updateUserAvatar } from '@services/users/users'
 import { constructAcceptValue } from '@/lib/constants'
+import { useFileUpload } from '@/hooks/useFileUpload'
 import * as Yup from 'yup'
 import { Input } from "@components/ui/input"
 import { Textarea } from "@components/ui/textarea"
@@ -487,18 +487,6 @@ const UserEditForm = ({
             <div className="bg-gray-50/50 p-6 rounded-lg nice-shadow h-full">
               <div className="flex flex-col items-center space-y-6">
                 <Label className="font-bold">Profile Picture</Label>
-                {profilePicture.error && (
-                  <div className="flex items-center bg-red-200 rounded-md text-red-950 px-4 py-2 text-sm">
-                    <FileWarning size={16} className="mr-2" />
-                    <span className="font-semibold first-letter:uppercase">{profilePicture.error}</span>
-                  </div>
-                )}
-                {profilePicture.success && (
-                  <div className="flex items-center bg-green-200 rounded-md text-green-950 px-4 py-2 text-sm">
-                    <Check size={16} className="mr-2" />
-                    <span className="font-semibold first-letter:uppercase">{profilePicture.success}</span>
-                  </div>
-                )}
                 {profilePicture.localAvatar ? (
                   <UserAvatar
                     border="border-8"
@@ -508,12 +496,25 @@ const UserEditForm = ({
                 ) : (
                   <UserAvatar border="border-8" width={120} />
                 )}
-                {profilePicture.isLoading ? (
+                {profilePicture.error && (
+                  <div className="flex items-center bg-red-200 rounded-md text-red-950 px-4 py-2 text-sm">
+                    <FileWarning size={16} className="mr-2" />
+                    <span className="font-semibold first-letter:uppercase">{profilePicture.error}</span>
+                  </div>
+                )}
+                {profilePicture.isLoading && !profilePicture.success && (
                   <div className="font-bold animate-pulse antialiased bg-green-200 text-gray text-sm rounded-md px-4 py-2 flex items-center">
                     <ArrowBigUpDash size={16} className="mr-2" />
                     <span>Uploading</span>
                   </div>
-                ) : (
+                )}
+                {profilePicture.success && (
+                  <div className="flex items-center bg-green-200 rounded-md text-green-950 px-4 py-2 text-sm">
+                    <Check size={16} className="mr-2" />
+                    <span className="font-semibold first-letter:uppercase">{profilePicture.success}</span>
+                  </div>
+                )}
+                {!profilePicture.isLoading && !profilePicture.success && (
                   <>
                     <input
                       type="file"
@@ -560,10 +561,10 @@ function UserEditGeneral() {
   const session = useLHSession() as any;
   const access_token = session?.data?.tokens?.access_token;
   const [localAvatar, setLocalAvatar] = React.useState(null) as any
-  const [isLoading, setIsLoading] = React.useState(false) as any
   const [error, setError] = React.useState() as any
   const [success, setSuccess] = React.useState('') as any
   const [userData, setUserData] = useState<any>(null);
+  const { upload, isLoading, progress } = useFileUpload();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -583,17 +584,28 @@ function UserEditGeneral() {
 
   const handleFileChange = async (event: any) => {
     const file = event.target.files[0]
+    if (!file) return
+    
     setLocalAvatar(file)
-    setIsLoading(true)
-    const res = await updateUserAvatar(session.data.user_uuid, file, access_token)
-    // wait for 1 second to show loading animation
-    await new Promise((r) => setTimeout(r, 1500))
-    if (res.success === false) {
-      setError(res.HTTPmessage)
-    } else {
-      setIsLoading(false)
-      setError('')
-      setSuccess('Avatar Updated')
+    setError('')
+    setSuccess('')
+    
+    try {
+      const result = await upload({
+        file,
+        resourceType: 'user_avatar',
+        resourceId: session.data.user.user_uuid,
+        fileCategory: 'image',
+      })
+      
+      if (result.success) {
+        // Show success message immediately while still loading
+        setSuccess('Avatar Updated')
+      } else {
+        setError(result.error || 'Upload failed')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Upload failed')
     }
   }
 

@@ -31,3 +31,7 @@ class StorageBackend(ABC):
     @abstractmethod
     async def validate_connection(self) -> bool:
         pass
+
+    @abstractmethod
+    async def verify_file_exists(self, file_path: str) -> bool:
+        pass

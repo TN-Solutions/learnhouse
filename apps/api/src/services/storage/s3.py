@@ -17,9 +17,13 @@ class S3Storage(StorageBackend):
         
         self.bucket_name = s3_config.bucket_name
         self.endpoint_url = s3_config.endpoint_url
+        self.public_url = s3_config.public_url  # For public file access
         
         self.s3_client = boto3.client(
             "s3",
+            aws_access_key_id=s3_config.access_key_id,
+            aws_secret_access_key=s3_config.secret_access_key,
+            region_name=s3_config.region,
             endpoint_url=self.endpoint_url,
             config=Config(signature_version="s3v4"),
         )
@@ -31,29 +35,36 @@ class S3Storage(StorageBackend):
         file_size: Optional[int] = None,
     ) -> UploadUrlResponse:
         try:
-            max_file_size = file_size if file_size else 104857600
-            
-            presigned_post = self.s3_client.generate_presigned_post(
-                Bucket=self.bucket_name,
-                Key=file_path,
-                Fields={"Content-Type": file_type},
-                Conditions=[
-                    {"Content-Type": file_type},
-                    ["content-length-range", 0, max_file_size],
-                ],
+            # Use presigned PUT for R2 compatibility
+            presigned_url = self.s3_client.generate_presigned_url(
+                "put_object",
+                Params={
+                    "Bucket": self.bucket_name,
+                    "Key": file_path,
+                    "ContentType": file_type,
+                },
                 ExpiresIn=3600,
             )
 
-            file_url = f"{self.endpoint_url}/{self.bucket_name}/{file_path}" if self.endpoint_url else f"https://{self.bucket_name}.s3.amazonaws.com/{file_path}"
+            # Use public_url if available, otherwise construct default URL
+            if self.public_url:
+                # Public URL for R2.dev domain or custom domain
+                file_url = f"{self.public_url}/{file_path}"
+            elif self.endpoint_url:
+                # Fallback to endpoint URL (won't work for public access on R2)
+                file_url = f"{self.endpoint_url}/{self.bucket_name}/{file_path}"
+            else:
+                # AWS S3 default
+                file_url = f"https://{self.bucket_name}.s3.amazonaws.com/{file_path}"
 
             return UploadUrlResponse(
-                upload_url=presigned_post["url"],
-                method="POST",
-                fields=presigned_post["fields"],
+                upload_url=presigned_url,
+                method="PUT",
+                fields={},
                 file_url=file_url,
             )
         except ClientError as e:
-            raise Exception(f"Failed to generate presigned POST URL: {str(e)}")
+            raise Exception(f"Failed to generate presigned PUT URL: {str(e)}")
 
     async def get_download_url(self, file_path: str) -> str:
         try:
@@ -81,3 +92,13 @@ class S3Storage(StorageBackend):
         except ClientError as e:
             print(f"S3 storage validation failed: {e}")
             return False
+
+    async def verify_file_exists(self, file_path: str) -> bool:
+        try:
+            self.s3_client.head_object(Bucket=self.bucket_name, Key=file_path)
+            return True
+        except ClientError as e:
+            error_code = e.response.get('Error', {}).get('Code', '')
+            if error_code == '404':
+                return False
+            raise Exception(f"Failed to verify file existence: {str(e)}")

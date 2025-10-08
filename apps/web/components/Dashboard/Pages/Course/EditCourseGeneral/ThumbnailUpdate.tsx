@@ -1,7 +1,6 @@
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
-import { updateCourseThumbnail } from '@services/courses/courses'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import {
   ArrowBigUpDash,
@@ -10,7 +9,7 @@ import {
   Video,
 } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { useFileUpload } from '@hooks/useFileUpload'
+import { useFileUpload } from '@/hooks/useFileUpload'
 import React, { useState, useEffect, useRef } from 'react'
 import { mutate } from 'swr'
 import UnsplashImagePicker from './UnsplashImagePicker'
@@ -130,7 +129,6 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
 
   const handleUnsplashSelect = async (imageUrl: string) => {
     try {
-      setIsLoading(true)
       const response = await fetch(imageUrl)
       const blob = await response.blob()
 
@@ -151,41 +149,37 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
       await updateThumbnail(file, 'image')
     } catch (err) {
       showError('Failed to process Unsplash image')
-      setIsLoading(false)
     }
   }
 
   const updateThumbnail = async (file: File, type: 'image' | 'video') => {
-    setIsLoading(true)
     try {
-      const formData = new FormData()
-      formData.append('thumbnail', file)
-      formData.append('thumbnail_type', type)
+      const resourceType = type === 'image' ? 'course_thumbnail_image' : 'course_thumbnail_video'
+      const fileCategory = type === 'image' ? 'image' : 'video'
+      
+      const result = await upload({
+        file,
+        resourceType,
+        resourceId: course.courseStructure.course_uuid,
+        fileCategory,
+      })
 
-      const res = await updateCourseThumbnail(
-        course.courseStructure.course_uuid,
-        formData,
-        session.data?.tokens?.access_token
-      )
-
-      await mutate(
-        `${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
-      )
-      await new Promise((r) => setTimeout(r, 1500))
-
-      if (res.success === false) {
-        showError(res.HTTPmessage)
-      } else {
+      if (result.success) {
+        await mutate(
+          `${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+        )
+        await new Promise((r) => setTimeout(r, 1500))
+        
         setLocalThumbnail(null)
         toast.success('Thumbnail updated successfully', {
           duration: 3000,
           position: 'top-center',
         })
+      } else {
+        showError(result.error || 'Failed to update thumbnail')
       }
-    } catch (err) {
-      showError('Failed to update thumbnail')
-    } finally {
-      setIsLoading(false)
+    } catch (err: any) {
+      showError(err.message || 'Failed to update thumbnail')
     }
   }
 

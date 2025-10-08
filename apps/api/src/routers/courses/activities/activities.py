@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, UploadFile, Form, Request
+from fastapi import APIRouter, Depends, UploadFile, File, Form, Request
 from src.db.courses.activities import ActivityCreate, ActivityRead, ActivityUpdate
 from src.db.users import PublicUser
 from src.core.events.database import get_db_session
@@ -115,7 +115,7 @@ async def api_create_video_activity(
     chapter_id: str = Form(),
     details: str = Form(default="{}"),
     current_user: PublicUser = Depends(get_current_user),
-    video_file: UploadFile | None = None,
+    video_file: UploadFile = File(...),
     db_session=Depends(get_db_session),
 ) -> ActivityRead:
     """
@@ -153,7 +153,7 @@ async def api_create_documentpdf_activity(
     name: str = Form(),
     chapter_id: str = Form(),
     current_user: PublicUser = Depends(get_current_user),
-    pdf_file: UploadFile | None = None,
+    pdf_file: UploadFile = File(...),
     db_session=Depends(get_db_session),
 ) -> ActivityRead:
     """

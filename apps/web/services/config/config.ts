@@ -7,7 +7,7 @@ export const LEARNHOUSE_TOP_DOMAIN =
   process.env.NEXT_PUBLIC_LEARNHOUSE_TOP_DOMAIN
 
 export const getAPIUrl = () => LEARNHOUSE_API_URL
-export const getBackendUrl = () => LEARNHOUSE_BACKEND_URL
+export const getBackendUrl = () => LEARNHOUSE_BACKEND_URL.replace(/\/+$/, '')
 
 // Multi Organization Mode
 export const isMultiOrgModeEnabled = () =>

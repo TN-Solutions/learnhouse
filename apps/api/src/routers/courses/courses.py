@@ -83,23 +83,6 @@ async def api_create_course(
     )
 
 
-@router.put("/{course_uuid}/thumbnail")
-async def api_create_course_thumbnail(
-    request: Request,
-    course_uuid: str,
-    thumbnail_type: ThumbnailType = Form(default=ThumbnailType.IMAGE),
-    thumbnail: UploadFile | None = None,
-    db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user),
-) -> CourseRead:
-    """
-    Update Course Thumbnail (Image or Video)
-    """
-    return await update_course_thumbnail(
-        request, course_uuid, current_user, db_session, thumbnail, thumbnail_type
-    )
-
-
 @router.get("/{course_uuid}")
 async def api_get_course(
     request: Request,

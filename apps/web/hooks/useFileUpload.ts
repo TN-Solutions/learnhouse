@@ -3,7 +3,6 @@ import {
   prepareUpload,
   confirmUpload,
   uploadFileDirect,
-  uploadFileToBackend,
   UploadPrepareRequest,
   UploadPrepareResponse,
 } from '@services/media/upload'
@@ -57,42 +56,29 @@ export function useFileUpload(): UseFileUploadReturn {
         const uploadResponse: UploadPrepareResponse =
           await prepareUpload(prepareRequest)
 
-        // Step 2: Upload file
-        if (uploadResponse.method === 'POST' && uploadResponse.fields.key) {
-          // S3 direct upload
-          await uploadFileDirect(
-            file,
-            uploadResponse.upload_url,
-            uploadResponse.method,
-            uploadResponse.fields,
-            (progressValue) => {
-              setProgress(progressValue)
-              onProgress?.(progressValue)
-            }
-          )
+        // Step 2: Upload file to S3
+        await uploadFileDirect(
+          file,
+          uploadResponse.upload_url,
+          uploadResponse.method,
+          uploadResponse.fields,
+          (progressValue) => {
+            setProgress(progressValue)
+            onProgress?.(progressValue)
+          }
+        )
 
-          // Step 3: Confirm upload (for S3)
-          await confirmUpload({
-            file_uuid: uploadResponse.fields.key || '',
-            file_path: uploadResponse.fields.key || '',
-            file_url: uploadResponse.file_url,
-            storage_backend: 's3api',
-            content_type: file.type,
-            file_size: file.size,
-            resource_type: resourceType,
-            resource_id: resourceId,
-          })
-        } else {
-          // Backend upload (filesystem)
-          await uploadFileToBackend(
-            file,
-            uploadResponse.upload_url,
-            (progressValue) => {
-              setProgress(progressValue)
-              onProgress?.(progressValue)
-            }
-          )
-        }
+        // Step 3: Confirm upload
+        await confirmUpload({
+          file_uuid: uploadResponse.file_uuid,
+          file_path: uploadResponse.file_path,
+          file_url: uploadResponse.file_url,
+          storage_backend: 's3api',
+          content_type: file.type,
+          file_size: file.size,
+          resource_type: resourceType,
+          resource_id: resourceId,
+        })
 
         setProgress(100)
         return {
@@ -163,29 +149,24 @@ export function useFileUploadMultiple() {
           const uploadResponse: UploadPrepareResponse =
             await prepareUpload(prepareRequest)
 
-          if (uploadResponse.method === 'POST' && uploadResponse.fields.key) {
-            // S3 direct upload
-            await uploadFileDirect(
-              file,
-              uploadResponse.upload_url,
-              uploadResponse.method,
-              uploadResponse.fields
-            )
+          // S3 upload
+          await uploadFileDirect(
+            file,
+            uploadResponse.upload_url,
+            uploadResponse.method,
+            uploadResponse.fields
+          )
 
-            await confirmUpload({
-              file_uuid: uploadResponse.fields.key || '',
-              file_path: uploadResponse.fields.key || '',
-              file_url: uploadResponse.file_url,
-              storage_backend: 's3api',
-              content_type: file.type,
-              file_size: file.size,
-              resource_type: resourceType,
-              resource_id: resourceId,
-            })
-          } else {
-            // Backend upload
-            await uploadFileToBackend(file, uploadResponse.upload_url)
-          }
+          await confirmUpload({
+            file_uuid: uploadResponse.file_uuid,
+            file_path: uploadResponse.file_path,
+            file_url: uploadResponse.file_url,
+            storage_backend: 's3api',
+            content_type: file.type,
+            file_size: file.size,
+            resource_type: resourceType,
+            resource_id: resourceId,
+          })
 
           results.push({
             fileUrl: uploadResponse.file_url,

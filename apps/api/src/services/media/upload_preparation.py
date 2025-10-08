@@ -68,7 +68,7 @@ async def prepare_upload(
     resource_type: str,
     resource_id: str,
     file_category: Optional[str] = None,
-) -> UploadUrlResponse:
+) -> dict:
     sanitized_filename = sanitize_filename(file_name)
     
     validate_file_type(content_type, sanitized_filename, file_category)
@@ -88,4 +88,11 @@ async def prepare_upload(
         file_size=file_size,
     )
     
-    return upload_response
+    return {
+        "file_uuid": file_uuid,
+        "upload_url": upload_response.upload_url,
+        "method": upload_response.method,
+        "fields": upload_response.fields,
+        "file_url": upload_response.file_url,
+        "file_path": file_path,
+    }

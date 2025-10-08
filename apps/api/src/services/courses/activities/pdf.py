@@ -88,7 +88,17 @@ async def create_documentpdf_activity(
             status_code=status.HTTP_409_CONFLICT, detail="Pdf : No pdf file provided"
         )
 
-    # Create activity
+    # Upload pdf first to get file URL
+    upload_result = None
+    if pdf_file and organization and course:
+        upload_result = await upload_pdf(
+            pdf_file,
+            activity_uuid,
+            organization.org_uuid,
+            course.course_uuid,
+        )
+    
+    # Create activity with file URL from S3
     activity = Activity(
         name=name,
         activity_type=ActivityTypeEnum.TYPE_DOCUMENT,
@@ -96,6 +106,7 @@ async def create_documentpdf_activity(
         content={
             "filename": "documentpdf." + pdf_format,
             "activity_uuid": activity_uuid,
+            "file_url": upload_result.get("file_url") if upload_result else None,
             },  
         org_id=org_id if org_id else 0,
         course_id=coursechapter.course_id,
@@ -119,16 +130,6 @@ async def create_documentpdf_activity(
         update_date=str(datetime.now()),
         order=1,
     )
-
-    # upload pdf
-    if pdf_file and organization and course:
-        # get pdffile format
-        await upload_pdf(
-            pdf_file,
-            activity.activity_uuid,
-            organization.org_uuid,
-            course.course_uuid,
-        )
 
     # Insert ChapterActivity link in DB
     db_session.add(activity_chapter)

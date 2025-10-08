@@ -15,7 +15,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { useFileUpload } from '@hooks/useFileUpload'
+import { useFileUpload } from '@/hooks/useFileUpload'
 import {
   FileUploadBlock,
   FileUploadBlockButton,

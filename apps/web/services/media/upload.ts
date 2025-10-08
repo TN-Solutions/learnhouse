@@ -10,6 +10,8 @@ export interface UploadPrepareRequest {
 }
 
 export interface UploadPrepareResponse {
+  file_uuid: string
+  file_path: string
   upload_url: string
   method: string
   fields: Record<string, string>
@@ -30,7 +32,7 @@ export interface UploadConfirmRequest {
 export async function prepareUpload(
   request: UploadPrepareRequest
 ): Promise<UploadPrepareResponse> {
-  const response = await fetch(`${getBackendUrl()}/api/v1/media/prepare`, {
+  const response = await fetch(`${getBackendUrl()}/api/v1/media/upload/prepare`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -50,7 +52,7 @@ export async function prepareUpload(
 export async function confirmUpload(
   request: UploadConfirmRequest
 ): Promise<any> {
-  const response = await fetch(`${getBackendUrl()}/api/v1/media/confirm`, {
+  const response = await fetch(`${getBackendUrl()}/api/v1/media/upload/confirm`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -74,16 +76,6 @@ export async function uploadFileDirect(
   fields: Record<string, string>,
   onProgress?: (progress: number) => void
 ): Promise<void> {
-  const formData = new FormData()
-
-  // Add fields to form data
-  Object.entries(fields).forEach(([key, value]) => {
-    formData.append(key, value)
-  })
-
-  // Add file to form data
-  formData.append('file', file)
-
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
 
@@ -110,52 +102,21 @@ export async function uploadFileDirect(
     })
 
     xhr.open(method, uploadUrl)
-    xhr.send(formData)
-  })
-}
 
-export async function uploadFileToBackend(
-  file: File,
-  uploadUrl: string,
-  onProgress?: (progress: number) => void
-): Promise<void> {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  // Extract path from fields if it exists
-  const urlObj = new URL(uploadUrl)
-  const pathParam = urlObj.searchParams.get('path')
-  if (pathParam) {
-    formData.append('path', pathParam)
-  }
-
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-
-    // Progress tracking
-    if (onProgress) {
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable) {
-          const progress = (event.loaded / event.total) * 100
-          onProgress(progress)
-        }
+    // For PUT method (R2/S3), send file directly with Content-Type header
+    if (method === 'PUT') {
+      xhr.setRequestHeader('Content-Type', file.type)
+      xhr.send(file)
+    } else {
+      // For POST method (legacy S3), use FormData with fields
+      const formData = new FormData()
+      Object.entries(fields).forEach(([key, value]) => {
+        formData.append(key, value)
       })
+      formData.append('file', file)
+      xhr.send(formData)
     }
-
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve()
-      } else {
-        reject(new Error(`Upload failed with status ${xhr.status}`))
-      }
-    })
-
-    xhr.addEventListener('error', () => {
-      reject(new Error('Upload failed'))
-    })
-
-    xhr.open('POST', uploadUrl)
-    xhr.withCredentials = true
-    xhr.send(formData)
   })
 }
+
+

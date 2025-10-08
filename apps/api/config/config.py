@@ -33,11 +33,7 @@ class AIConfig(BaseModel):
 class S3ApiConfig(BaseModel):
     bucket_name: str | None
     endpoint_url: str | None
-    access_key_id: str | None
-    secret_access_key: str | None
-    region: str | None
-    presigned_url_expiry: int = 3600  # 1 hour default
-    max_file_size: int = 104857600  # 100MB default
+    public_url: str | None  # Public URL for file access (e.g., R2.dev domain or custom domain)
     access_key_id: str | None
     secret_access_key: str | None
     region: str | None
@@ -204,6 +200,7 @@ def get_learnhouse_config() -> LearnHouseConfig:
     # S3 Configuration
     env_bucket_name = os.environ.get("LEARNHOUSE_S3_API_BUCKET_NAME")
     env_endpoint_url = os.environ.get("LEARNHOUSE_S3_API_ENDPOINT_URL")
+    env_public_url = os.environ.get("LEARNHOUSE_S3_API_PUBLIC_URL")
     env_access_key_id = os.environ.get("LEARNHOUSE_S3_API_ACCESS_KEY_ID")
     env_secret_access_key = os.environ.get("LEARNHOUSE_S3_API_SECRET_ACCESS_KEY")
     env_region = os.environ.get("LEARNHOUSE_S3_API_REGION")
@@ -222,6 +219,12 @@ def get_learnhouse_config() -> LearnHouseConfig:
         .get("s3api", {})
         .get("endpoint_url")
     ) or env_endpoint_url
+    public_url = (
+        yaml_config.get("hosting_config", {})
+        .get("content_delivery", {})
+        .get("s3api", {})
+        .get("public_url")
+    ) or env_public_url
     access_key_id = (
         yaml_config.get("hosting_config", {})
         .get("content_delivery", {})
@@ -268,6 +271,7 @@ def get_learnhouse_config() -> LearnHouseConfig:
         s3api=S3ApiConfig(
             bucket_name=bucket_name,
             endpoint_url=endpoint_url,
+            public_url=public_url,
             access_key_id=access_key_id,
             secret_access_key=secret_access_key,
             region=region,

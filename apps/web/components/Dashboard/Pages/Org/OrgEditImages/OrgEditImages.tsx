@@ -8,7 +8,8 @@ import { getOrgLogoMediaDirectory, getOrgPreviewMediaDirectory, getOrgThumbnailM
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs"
 import { toast } from 'react-hot-toast'
 import { constructAcceptValue } from '@/lib/constants'
-import { uploadOrganizationLogo, uploadOrganizationThumbnail, uploadOrganizationPreview, updateOrganization } from '@services/settings/org'
+import { updateOrganization } from '@services/settings/org'
+import { useFileUpload } from '@/hooks/useFileUpload'
 import { cn } from '@/lib/utils'
 import { Input } from "@components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@components/ui/dialog"
@@ -72,8 +73,9 @@ export default function OrgEditImages() {
   const org = useOrg() as any
   const [localLogo, setLocalLogo] = useState<string | null>(null)
   const [localThumbnail, setLocalThumbnail] = useState<string | null>(null)
-  const [isLogoUploading, setIsLogoUploading] = useState(false)
-  const [isThumbnailUploading, setIsThumbnailUploading] = useState(false)
+  const { upload: uploadLogo, isLoading: isLogoUploading } = useFileUpload()
+  const { upload: uploadThumbnail, isLoading: isThumbnailUploading } = useFileUpload()
+  const { upload: uploadPreview, isLoading: isPreviewUploading } = useFileUpload()
   const [previews, setPreviews] = useState<Preview[]>(() => {
     // Initialize with image previews
     const imagePreviews = (org?.previews?.images || [])
@@ -103,7 +105,7 @@ export default function OrgEditImages() {
     const allPreviews = [...imagePreviews, ...videoPreviews];
     return allPreviews.sort((a, b) => a.order - b.order);
   });
-  const [isPreviewUploading, setIsPreviewUploading] = useState(false)
+
   const [videoUrl, setVideoUrl] = useState('')
   const [videoDialogOpen, setVideoDialogOpen] = useState(false)
   const [selectedService, setSelectedService] = useState<VideoService>(null)
@@ -112,17 +114,24 @@ export default function OrgEditImages() {
     if (event.target.files && event.target.files.length > 0) {
       const file = event.target.files[0]
       setLocalLogo(URL.createObjectURL(file))
-      setIsLogoUploading(true)
       const loadingToast = toast.loading('Uploading logo...')
       try {
-        await uploadOrganizationLogo(org.id, file, access_token)
-        await new Promise((r) => setTimeout(r, 1500))
-        toast.success('Logo Updated', { id: loadingToast })
-        router.refresh()
-      } catch (err) {
-        toast.error('Failed to upload logo', { id: loadingToast })
-      } finally {
-        setIsLogoUploading(false)
+        const result = await uploadLogo({
+          file,
+          resourceType: 'org_logo',
+          resourceId: org.org_uuid,
+          fileCategory: 'image',
+        })
+        
+        if (result.success) {
+          await new Promise((r) => setTimeout(r, 1500))
+          toast.success('Logo Updated', { id: loadingToast })
+          router.refresh()
+        } else {
+          toast.error(result.error || 'Failed to upload logo', { id: loadingToast })
+        }
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to upload logo', { id: loadingToast })
       }
     }
   }
@@ -131,17 +140,24 @@ export default function OrgEditImages() {
     if (event.target.files && event.target.files.length > 0) {
       const file = event.target.files[0]
       setLocalThumbnail(URL.createObjectURL(file))
-      setIsThumbnailUploading(true)
       const loadingToast = toast.loading('Uploading thumbnail...')
       try {
-        await uploadOrganizationThumbnail(org.id, file, access_token)
-        await new Promise((r) => setTimeout(r, 1500))
-        toast.success('Thumbnail Updated', { id: loadingToast })
-        router.refresh()
-      } catch (err) {
-        toast.error('Failed to upload thumbnail', { id: loadingToast })
-      } finally {
-        setIsThumbnailUploading(false)
+        const result = await uploadThumbnail({
+          file,
+          resourceType: 'org_thumbnail',
+          resourceId: org.org_uuid,
+          fileCategory: 'image',
+        })
+        
+        if (result.success) {
+          await new Promise((r) => setTimeout(r, 1500))
+          toast.success('Thumbnail Updated', { id: loadingToast })
+          router.refresh()
+        } else {
+          toast.error(result.error || 'Failed to upload thumbnail', { id: loadingToast })
+        }
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to upload thumbnail', { id: loadingToast })
       }
     }
   }
@@ -161,18 +177,27 @@ export default function OrgEditImages() {
         return
       }
 
-      setIsPreviewUploading(true)
       const loadingToast = toast.loading(`Uploading ${files.length} preview${files.length === 1 ? '' : 's'}...`)
       
       try {
         const uploadPromises = files.map(async (file) => {
-          const response = await uploadOrganizationPreview(org.id, file, access_token)
+          const result = await uploadPreview({
+            file,
+            resourceType: 'org_preview',
+            resourceId: org.org_uuid,
+            fileCategory: 'image',
+          })
+          
+          if (!result.success) {
+            throw new Error(result.error || 'Upload failed')
+          }
+          
           return {
-            id: response.name_in_disk,
-            url: URL.createObjectURL(file),
-            filename: response.name_in_disk,
+            id: result.fileUrl.split('/').pop() || '',
+            url: result.fileUrl,
+            filename: result.fileUrl.split('/').pop() || '',
             type: 'image' as const,
-            order: previews.length // Add new items at the end
+            order: previews.length
           }
         })
 
@@ -201,10 +226,8 @@ export default function OrgEditImages() {
         setPreviews(updatedPreviews)
         toast.success(`${files.length} preview${files.length === 1 ? '' : 's'} added`, { id: loadingToast })
         router.refresh()
-      } catch (err) {
-        toast.error('Failed to upload previews', { id: loadingToast })
-      } finally {
-        setIsPreviewUploading(false)
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to upload previews', { id: loadingToast })
       }
     }
   }

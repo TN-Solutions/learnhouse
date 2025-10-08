@@ -37,18 +37,18 @@ export function getCourseThumbnailMediaDirectory(
   courseUUID: string,
   fileId: string
 ) {
-  const legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/thumbnails/${fileId}`
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileId is already a full S3 URL, return it directly
+  return getMediaUrlFromFileUrl(fileId)
 }
 
 export function getOrgLandingMediaDirectory(orgUUID: string, fileId: string) {
-  const legacyPath = `content/orgs/${orgUUID}/landing/${fileId}`
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileId is already a full S3 URL, return it directly
+  return getMediaUrlFromFileUrl(fileId)
 }
 
 export function getUserAvatarMediaDirectory(userUUID: string, fileId: string) {
-  const legacyPath = `content/users/${userUUID}/avatars/${fileId}`
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileId is already a full S3 URL, return it directly
+  return getMediaUrlFromFileUrl(fileId)
 }
 
 export function getActivityBlockMediaDirectory(
@@ -59,16 +59,8 @@ export function getActivityBlockMediaDirectory(
   fileId: any,
   type: string
 ) {
-  let legacyPath = ''
-  if (type == 'pdfBlock') {
-    legacyPath = `content/orgs/${orgUUID}/courses/${courseId}/activities/${activityId}/dynamic/blocks/pdfBlock/${blockId}/${fileId}`
-  } else if (type == 'videoBlock') {
-    legacyPath = `content/orgs/${orgUUID}/courses/${courseId}/activities/${activityId}/dynamic/blocks/videoBlock/${blockId}/${fileId}`
-  } else if (type == 'imageBlock') {
-    legacyPath = `content/orgs/${orgUUID}/courses/${courseId}/activities/${activityId}/dynamic/blocks/imageBlock/${blockId}/${fileId}`
-  }
-
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileId is already a full S3 URL, return it directly
+  return getMediaUrlFromFileUrl(fileId)
 }
 
 export function getTaskRefFileDir(
@@ -79,8 +71,8 @@ export function getTaskRefFileDir(
   assignmentTaskUUID: string,
   fileID: string
 ) {
-  const legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/${fileID}`
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileID is already a full S3 URL, return it directly
+  return getMediaUrlFromFileUrl(fileID)
 }
 
 export function getTaskFileSubmissionDir(
@@ -91,8 +83,8 @@ export function getTaskFileSubmissionDir(
   assignmentTaskUUID: string,
   fileSubID: string
 ) {
-  const legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/subs/${fileSubID}`
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileSubID is already a full S3 URL, return it directly
+  return getMediaUrlFromFileUrl(fileSubID)
 }
 
 export function getActivityMediaDirectory(
@@ -102,27 +94,22 @@ export function getActivityMediaDirectory(
   fileId: string,
   activityType: string
 ) {
-  let legacyPath = ''
-  if (activityType == 'video') {
-    legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/video/${fileId}`
-  } else if (activityType == 'documentpdf') {
-    legacyPath = `content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/documentpdf/${fileId}`
-  }
-
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileId is already a full S3 URL (from activity.content.file_url), return it directly
+  // Otherwise construct legacy path for backward compatibility
+  return getMediaUrlFromFileUrl(fileId)
 }
 
 export function getOrgLogoMediaDirectory(orgUUID: string, fileId: string) {
-  const legacyPath = `content/orgs/${orgUUID}/logos/${fileId}`
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileId is already a full S3 URL, return it directly
+  return getMediaUrlFromFileUrl(fileId)
 }
 
 export function getOrgThumbnailMediaDirectory(orgUUID: string, fileId: string) {
-  const legacyPath = `content/orgs/${orgUUID}/thumbnails/${fileId}`
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileId is already a full S3 URL, return it directly
+  return getMediaUrlFromFileUrl(fileId)
 }
 
 export function getOrgPreviewMediaDirectory(orgUUID: string, fileId: string) {
-  const legacyPath = `content/orgs/${orgUUID}/previews/${fileId}`
-  return getMediaUrlFromFileUrl(legacyPath)
+  // If fileId is already a full S3 URL, return it directly
+  return getMediaUrlFromFileUrl(fileId)
 }

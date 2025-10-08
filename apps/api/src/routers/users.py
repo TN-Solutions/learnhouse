@@ -202,20 +202,6 @@ async def api_update_user(
     return await update_user(request, db_session, user_id, current_user, user_object)
 
 
-@router.put("/update_avatar/{user_id}", response_model=UserRead, tags=["users"])
-async def api_update_avatar_user(
-    *,
-    request: Request,
-    db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user),
-    avatar_file: UploadFile | None = None,
-) -> UserRead:
-    """
-    Update User
-    """
-    return await update_user_avatar(request, db_session, current_user, avatar_file)
-
-
 @router.put("/change_password/{user_id}", response_model=UserRead, tags=["users"])
 async def api_update_user_password(
     *,

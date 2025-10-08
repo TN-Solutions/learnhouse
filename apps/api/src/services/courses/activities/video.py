@@ -95,6 +95,16 @@ async def create_video_activity(
             detail="Video : No video file provided",
         )
 
+    # Upload video first to get file URL
+    upload_result = None
+    if video_file and organization and course:
+        upload_result = await upload_video(
+            video_file,
+            activity_uuid,
+            organization.org_uuid,
+            course.course_uuid,
+        )
+
     activity_object = Activity(
         name=name,
         activity_type=ActivityTypeEnum.TYPE_VIDEO,
@@ -105,6 +115,7 @@ async def create_video_activity(
         content={
             "filename": "video." + video_format,
             "activity_uuid": activity_uuid,
+            "file_url": upload_result.get("file_url") if upload_result else None,
         },
         details=details if isinstance(details, dict) else json.loads(details),
         creation_date=str(datetime.now()),
@@ -116,16 +127,6 @@ async def create_video_activity(
     db_session.add(activity)
     db_session.commit()
     db_session.refresh(activity)
-
-    # upload video
-    if video_file and organization and course:
-        # get videofile format
-        await upload_video(
-            video_file,
-            activity.activity_uuid,
-            organization.org_uuid,
-            course.course_uuid,
-        )
 
     # update chapter
     chapter_activity_object = ChapterActivity(
