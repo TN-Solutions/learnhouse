@@ -22,8 +22,11 @@ export function useContributorStatus(courseUuid: string) {
     }
 
     try {
+      // Ensure course UUID has the 'course_' prefix
+      const formattedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`;
+      
       const response = await getCourseContributors(
-        'course_' + courseUuid,
+        formattedCourseUuid,
         session.data?.tokens?.access_token
       );
       
