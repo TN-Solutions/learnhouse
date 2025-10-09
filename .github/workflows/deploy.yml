@@ -1,0 +1,227 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate environment variables
+        run: |
+          echo "Validating required environment variables..."
+          if [[ -z "${{ secrets.CLOUD_HOST }}" ]]; then
+            echo "Error: CLOUD_HOST is not set"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.CLOUD_USERNAME }}" ]]; then
+            echo "Error: CLOUD_USERNAME is not set"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.CLOUD_SSH_KEY }}" ]]; then
+            echo "Error: CLOUD_SSH_KEY is not set"
+            exit 1
+          fi
+          echo "Environment validation passed!"
+
+  build-api:
+    runs-on: ubuntu-latest
+    needs: validate
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push API image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/api
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-web:
+    runs-on: ubuntu-latest
+    needs: validate
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/web
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Web image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/web
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [validate, build-api, build-web]
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.CLOUD_HOST }}
+          username: ${{ secrets.CLOUD_USERNAME }}
+          key: ${{ secrets.CLOUD_SSH_KEY }}
+          script: |
+            # Set environment variables
+            export API_IMAGE="${{ needs.build-api.outputs.image }}"
+            export WEB_IMAGE="${{ needs.build-web.outputs.image }}"
+            export POSTGRES_URL="${{ secrets.POSTGRES_URL }}"
+            export REDIS_URL="${{ secrets.REDIS_URL }}"
+            export NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
+
+            # Create environment file if it doesn't exist
+            if [[ ! -f ".env.production" ]]; then
+              cat > .env.production << EOF
+            POSTGRES_URL=${POSTGRES_URL}
+            REDIS_URL=${REDIS_URL}
+            NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+            ENVIRONMENT=production
+            EOF
+            fi
+
+            # Pull latest images
+            echo "Pulling latest images..."
+            docker pull ${API_IMAGE}
+            docker pull ${WEB_IMAGE}
+
+            # Update docker-compose.yml with new image tags
+            sed -i "s|image: learnhouse-api:.*|image: ${API_IMAGE}|g" docker-compose.production.yml
+            sed -i "s|image: learnhouse-web:.*|image: ${WEB_IMAGE}|g" docker-compose.production.yml
+
+            # Deploy with zero downtime
+            echo "Deploying new version..."
+            docker-compose -f docker-compose.production.yml pull
+            docker-compose -f docker-compose.production.yml up -d --no-deps api
+            sleep 10
+            docker-compose -f docker-compose.production.yml up -d --no-deps web
+
+            # Health check
+            echo "Performing health checks..."
+            sleep 30
+
+            # Check API health
+            if curl -f http://localhost:9000/health; then
+              echo "✅ API health check passed"
+            else
+              echo "❌ API health check failed"
+              exit 1
+            fi
+
+            # Check Web health
+            if curl -f http://localhost:3000/api/health; then
+              echo "✅ Web health check passed"
+            else
+              echo "❌ Web health check failed"
+              exit 1
+            fi
+
+            # Clean up old images
+            echo "Cleaning up old images..."
+            docker image prune -f
+
+            echo "🚀 Deployment completed successfully!"
+
+  rollback:
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: failure()
+    environment: production
+    steps:
+      - name: Rollback deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.CLOUD_HOST }}
+          username: ${{ secrets.CLOUD_USERNAME }}
+          key: ${{ secrets.CLOUD_SSH_KEY }}
+          script: |
+            echo "🔄 Rolling back deployment..."
+
+            # Get previous working images
+            PREVIOUS_API=$(docker images --format "table {{.Repository}}:{{.Tag}}" | grep learnhouse-api | head -2 | tail -1)
+            PREVIOUS_WEB=$(docker images --format "table {{.Repository}}:{{.Tag}}" | grep learnhouse-web | head -2 | tail -1)
+
+            if [[ -n "$PREVIOUS_API" && -n "$PREVIOUS_WEB" ]]; then
+              echo "Rolling back to: $PREVIOUS_API and $PREVIOUS_WEB"
+              
+              # Update docker-compose.yml with previous image tags
+              sed -i "s|image: learnhouse-api:.*|image: $PREVIOUS_API|g" docker-compose.production.yml
+              sed -i "s|image: learnhouse-web:.*|image: $PREVIOUS_WEB|g" docker-compose.production.yml
+              
+              # Deploy previous version
+              docker-compose -f docker-compose.production.yml up -d
+              
+              echo "✅ Rollback completed"
+            else
+              echo "❌ No previous images found for rollback"
+              exit 1
+            fi

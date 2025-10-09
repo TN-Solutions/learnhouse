@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ./apps/api
+      target: production
+    ports:
+      - "9000:9000"
+    environment:
+      - DATABASE_URL=${POSTGRES_URL}
+      - REDIS_URL=${REDIS_URL}
+      - LEARNHOUSE_SQL_CONNECTION_STRING=${POSTGRES_URL}
+      - LEARNHOUSE_REDIS_CONNECTION_STRING=${REDIS_URL}
+      - ENVIRONMENT=production
+    networks:
+      - learnhouse-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web:
+    build:
+      context: ./apps/web
+      target: production
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NODE_ENV=production
+      - ENVIRONMENT=production
+    networks:
+      - learnhouse-network
+    restart: unless-stopped
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  learnhouse-network:
+    driver: bridge
+
+volumes:
+  api_data:
+  web_data:
