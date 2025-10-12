@@ -34,7 +34,7 @@ function ImageBlockComponent(props: any) {
   const access_token = session?.data?.tokens?.access_token
 
   const isEditable = editorState.isEditable
-  const [image, setImage] = React.useState(null)
+  const [image, setImage] = React.useState<File | null>(null)
   const { upload, isLoading, progress, error } = useFileUpload()
   const [blockObject, setblockObject] = React.useState(
     props.node.attrs.blockObject
@@ -73,7 +73,7 @@ function ImageBlockComponent(props: any) {
         block_uuid: props.node.attrs.blockObject?.block_uuid || generateUUID(),
         content: {
           file_id: extractFileIdFromUrl(result.fileUrl),
-          file_format: getFileExtension(image.name),
+          file_format: getFileExtension(image!.name),
           file_url: result.fileUrl,
         },
         block_type: 'image',

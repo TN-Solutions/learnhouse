@@ -234,7 +234,6 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
     const file = event.target.files?.[0]
     if (file) {
       setVideo(file)
-      setError(null)
       handleUpload(file)
     }
   }
@@ -263,10 +262,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
 
     if (file && fileExtension && ['mp4', 'webm'].includes(fileExtension)) {
       setVideo(file)
-      setError(null)
       handleUpload(file)
-    } else {
-      setError('Please upload a supported video format (MP4 or WebM)')
     }
   }
 
@@ -277,7 +273,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
       resourceId: extension.options.activity.activity_uuid,
       fileCategory: 'video',
     })
-    
+
     if (result.success) {
       // Create block object in the expected format
       const object = {
@@ -287,30 +283,33 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
           file_format: getFileExtension(file.name),
           file_url: result.fileUrl,
         },
-        size: selectedSize
+        size: selectedSize,
       }
-      
+
       setBlockObject(object)
       updateAttributes({ blockObject: object })
       setVideo(null)
     }
   }
-  
+
   // Helper functions
   const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0
-      const v = c === 'x' ? r : (r & 0x3 | 0x8)
-      return v.toString(16)
-    })
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+      /[xy]/g,
+      function (c) {
+        const r = (Math.random() * 16) | 0
+        const v = c === 'x' ? r : (r & 0x3) | 0x8
+        return v.toString(16)
+      }
+    )
   }
-  
+
   const extractFileIdFromUrl = (url: string) => {
     // Extract file ID from URL or generate a unique identifier
     const parts = url.split('/')
     return parts[parts.length - 1].split('.')[0]
   }
-  
+
   const getFileExtension = (filename: string) => {
     return filename.split('.').pop()?.toLowerCase() || 'mp4'
   }
@@ -487,17 +486,17 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
                       className="space-y-3"
                     >
                       <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" />
-                       <div className="text-sm text-zinc-600">
-                         Uploading video... {progress}%
-                       </div>
-                       <div className="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
-                         <motion.div
-                           className="h-full bg-blue-500 rounded-full"
-                           initial={{ width: 0 }}
-                           animate={{ width: `${progress}%` }}
-                           transition={{ duration: 0.2 }}
-                         />
-                       </div>
+                      <div className="text-sm text-zinc-600">
+                        Uploading video... {progress}%
+                      </div>
+                      <div className="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
+                        <motion.div
+                          className="h-full bg-blue-500 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progress}%` }}
+                          transition={{ duration: 0.2 }}
+                        />
+                      </div>
                     </motion.div>
                   ) : (
                     <motion.div

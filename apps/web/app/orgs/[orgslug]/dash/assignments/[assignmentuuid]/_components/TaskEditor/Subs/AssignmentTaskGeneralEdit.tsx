@@ -15,7 +15,10 @@ import FormLayout, {
 import * as Form from '@radix-ui/react-form'
 import { getActivityByID } from '@services/courses/activities'
 import { updateAssignmentTask } from '@services/courses/assignments'
-import { getTaskRefFileDir, getMediaUrlFromFileUrl } from '@services/media/media'
+import {
+  getTaskRefFileDir,
+  getMediaUrlFromFileUrl,
+} from '@services/media/media'
 import { getAPIUrl } from '@services/config/config'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useFormik } from 'formik'
@@ -153,65 +156,64 @@ export function AssignmentTaskGeneralEdit() {
 }
 
 function UpdateTaskRef() {
-    const session = useLHSession() as any;
-    const org = useOrg() as any;
-    const access_token = session?.data?.tokens?.access_token;
-    const assignmentTaskState = useAssignmentsTask() as any
-    const assignmentTaskStateHook = useAssignmentsTaskDispatch() as any
-    const assignment = useAssignments() as any
-    const [error, setError] = React.useState('') as any
-    const [activity, setActivity] = React.useState('') as any
-    
-    // Use the new upload hook
-    const { upload, isLoading, progress } = useFileUpload()
+  const session = useLHSession() as any
+  const org = useOrg() as any
+  const access_token = session?.data?.tokens?.access_token
+  const assignmentTaskState = useAssignmentsTask() as any
+  const assignmentTaskStateHook = useAssignmentsTaskDispatch() as any
+  const assignment = useAssignments() as any
+  const [error, setError] = React.useState('') as any
+  const [activity, setActivity] = React.useState('') as any
 
-    const handleFileChange = async (event: any) => {
-        const file = event.target.files[0]
-        if (!file) return
+  // Use the new upload hook
+  const { upload, isLoading, progress } = useFileUpload()
 
-        // Upload file using the new hook
-        const result = await upload({
-            file: file,
-            resourceType: 'assignment_reference',
-            resourceId: assignmentTaskState.assignmentTask.assignment_task_uuid,
-            fileCategory: 'document', // Default category, can be enhanced based on file type
-        })
+  const handleFileChange = async (event: any) => {
+    const file = event.target.files[0]
+    if (!file) return
 
-        if (result.success) {
-            // Update assignment task with the new file URL
-            try {
-                const response = await fetch(
-                    `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/${assignmentTaskState.assignmentTask.assignment_task_uuid}`,
-                    {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${access_token}`,
-                        },
-                        body: JSON.stringify({
-                            reference_file: result.fileUrl,
-                        }),
-                    }
-                )
+    // Upload file using the new hook
+    const result = await upload({
+      file: file,
+      resourceType: 'assignment_reference',
+      resourceId: assignmentTaskState.assignmentTask.assignment_task_uuid,
+      fileCategory: 'document', // Default category, can be enhanced based on file type
+    })
 
-                if (response.ok) {
-                    assignmentTaskStateHook({ type: 'reload' })
-                    toast.success('Reference file updated successfully')
-                    setError('')
-                } else {
-                    const errorData = await response.json()
-                    setError(errorData.detail || 'Failed to update reference file')
-                }
-            } catch (err) {
-                setError('Failed to update reference file')
-            }
+    if (result.success) {
+      // Update assignment task with the new file URL
+      try {
+        const response = await fetch(
+          `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/${assignmentTaskState.assignmentTask.assignment_task_uuid}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${access_token}`,
+            },
+            body: JSON.stringify({
+              reference_file: result.fileUrl,
+            }),
+          }
+        )
+
+        if (response.ok) {
+          assignmentTaskStateHook({ type: 'reload' })
+          toast.success('Reference file updated successfully')
+          setError('')
         } else {
-            setError(result.error || 'Failed to upload file')
+          const errorData = await response.json()
+          setError(errorData.detail || 'Failed to update reference file')
         }
-
-        // wait for 1 second to show loading animation
-        await new Promise((r) => setTimeout(r, 1500))
+      } catch (err) {
+        setError('Failed to update reference file')
+      }
+    } else {
+      setError(result.error || 'Failed to upload file')
     }
+
+    // wait for 1 second to show loading animation
+    await new Promise((r) => setTimeout(r, 1500))
   }
 
   const getTaskRefDirUI = () => {
@@ -225,36 +227,36 @@ function UpdateTaskRef() {
     )
   }
 
-    const deleteReferenceFile = async () => {
-        try {
-            const response = await fetch(
-                `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/${assignmentTaskState.assignmentTask.assignment_task_uuid}`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${access_token}`,
-                    },
-                    body: JSON.stringify({
-                        reference_file: '',
-                    }),
-                }
-            )
-
-            if (response.ok) {
-                assignmentTaskStateHook({ type: 'reload' })
-                setError('')
-            } else {
-                const errorData = await response.json()
-                setError(errorData.detail || 'Failed to delete reference file')
-            }
-        } catch (err) {
-            setError('Failed to delete reference file')
+  const deleteReferenceFile = async () => {
+    try {
+      const response = await fetch(
+        `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/${assignmentTaskState.assignmentTask.assignment_task_uuid}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${access_token}`,
+          },
+          body: JSON.stringify({
+            reference_file: '',
+          }),
         }
+      )
 
-        // wait for 1 second to show loading animation
-        await new Promise((r) => setTimeout(r, 1500))
+      if (response.ok) {
+        assignmentTaskStateHook({ type: 'reload' })
+        setError('')
+      } else {
+        const errorData = await response.json()
+        setError(errorData.detail || 'Failed to delete reference file')
+      }
+    } catch (err) {
+      setError('Failed to delete reference file')
     }
+
+    // wait for 1 second to show loading animation
+    await new Promise((r) => setTimeout(r, 1500))
+  }
 
   async function getActivityUI() {
     const res = await getActivityByID(
@@ -306,21 +308,21 @@ function UpdateTaskRef() {
             </div>
           )}
 
-                    {isLoading ? (
-                        <div className="flex justify-center items-center">
-                            <input
-                                type="file"
-                                accept={SUPPORTED_FILES}
-                                id="fileInput"
-                                style={{ display: 'none' }}
-                                onChange={handleFileChange}
-                            />
-                            <div className="font-bold  animate-pulse antialiased items-center bg-slate-200 text-gray text-sm rounded-md px-4 py-2 mt-4 flex flex-col">
-                                <Loader size={16} className="mr-2" />
-                                <span>Uploading... {progress}%</span>
-                            </div>
-                        </div>
-                    ) : (
+          {isLoading ? (
+            <div className="flex justify-center items-center">
+              <input
+                type="file"
+                accept={SUPPORTED_FILES}
+                id="fileInput"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+              <div className="font-bold animate-pulse antialiased items-center bg-slate-200 text-gray text-sm rounded-md px-4 py-2 mt-4 flex flex-col">
+                <Loader size={16} className="mr-2" />
+                <span>Uploading... {progress}%</span>
+              </div>
+            </div>
+          ) : (
             <div className="flex justify-center items-center">
               <input
                 type="file"
@@ -330,7 +332,7 @@ function UpdateTaskRef() {
                 onChange={handleFileChange}
               />
               <button
-                className="font-bold antialiased items-center  text-gray text-sm rounded-md px-4  mt-6 flex"
+                className="font-bold antialiased items-center text-gray text-sm rounded-md px-4 mt-6 flex"
                 onClick={() => document.getElementById('fileInput')?.click()}
               >
                 <UploadCloud size={16} className="mr-2" />

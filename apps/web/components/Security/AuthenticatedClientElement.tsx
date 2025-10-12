@@ -8,11 +8,11 @@ interface AuthenticatedClientElementProps {
   checkMethod: 'authentication' | 'roles'
   orgId?: string
   ressourceType?:
-  | 'collections'
-  | 'courses'
-  | 'activities'
-  | 'users'
-  | 'organizations'
+    | 'collections'
+    | 'courses'
+    | 'activities'
+    | 'users'
+    | 'organizations'
   action?: 'create' | 'update' | 'delete' | 'read'
 }
 
@@ -48,33 +48,40 @@ export const AuthenticatedClientElement = (
     return false
   }
 
-  function check() {
-    if (session.status == 'unauthenticated') {
-      setIsAllowed(false)
-      return
-    } else {
-      if (props.checkMethod === 'authentication') {
-        setIsAllowed(session.status == 'authenticated')
-      } else if (props.checkMethod === 'roles' ) {
-        return setIsAllowed(
-          isUserAllowed(
-            session?.data?.roles,
-            props.action!,
-            props.ressourceType!,
-            org?.org_uuid
-          )
-        )
-      }
-    }
-  }
-
   React.useEffect(() => {
     if (session.status == 'loading') {
       return
     }
 
+    function check() {
+      if (session.status == 'unauthenticated') {
+        setIsAllowed(false)
+        return
+      } else {
+        if (props.checkMethod === 'authentication') {
+          setIsAllowed(session.status == 'authenticated')
+        } else if (props.checkMethod === 'roles') {
+          return setIsAllowed(
+            isUserAllowed(
+              session?.data?.roles,
+              props.action!,
+              props.ressourceType!,
+              org?.org_uuid
+            )
+          )
+        }
+      }
+    }
+
     check()
-  }, [session.data, org])
+  }, [
+    session.data,
+    org,
+    session.status,
+    props.checkMethod,
+    props.action,
+    props.ressourceType,
+  ])
 
   return <>{isAllowed && props.children}</>
 }

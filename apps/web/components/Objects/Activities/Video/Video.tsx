@@ -18,6 +18,7 @@ interface VideoActivityProps {
     content: {
       filename?: string
       uri?: string
+      file_url?: string
     }
     details?: VideoDetails
   }
@@ -54,10 +55,7 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
                 {(() => {
                   const src = getVideoSrc()
                   return src ? (
-                    <LearnHousePlayer
-                      src={src}
-                      details={activity.details}
-                    />
+                    <LearnHousePlayer src={src} details={activity.details} />
                   ) : null
                 })()}
               </div>
@@ -78,7 +76,7 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
                       end: activity.details?.endTime || undefined,
                       controls: 1,
                       modestbranding: 1,
-                      rel: 0
+                      rel: 0,
                     },
                   }}
                   videoId={videoId}
