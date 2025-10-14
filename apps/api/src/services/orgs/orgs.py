@@ -79,7 +79,7 @@ async def get_organization_by_slug(
     request: Request,
     org_slug: str,
     db_session: Session,
-    current_user: PublicUser | AnonymousUser,
+    current_user: PublicUser | AnonymousUser | None,
 ) -> OrganizationRead:
     statement = select(Organization).where(Organization.slug == org_slug)
     result = db_session.exec(statement)
@@ -357,8 +357,12 @@ async def update_org_with_config_no_auth(
     if not org:
         raise HTTPException(
             status_code=404,
-            detail="Organization slug not found",
+            detail="Organization not found",
         )
+
+    # RBAC check - only if user is provided
+    if current_user is not None:
+        await rbac_check(request, org.org_uuid, current_user, "read", db_session)
 
     # Get org config
     statement = select(OrganizationConfig).where(OrganizationConfig.org_id == org.id)

@@ -1,0 +1,98 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js (from web app)
+node_modules/
+apps/web/
+apps/web/**/*
+
+# Logs
+logs/*.log
+logs/logs.txt
+
+# Environment files
+.env*
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+example-learnhouse-conf.env
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Tests
+src/tests/
+tests/
+test_*
+
+# Development tools
+.pre-commit-config.yaml
+.eslintrc*
+.prettierrc*
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database
+*.db
+*.sqlite3
+
+# Cache
+.cache/
+*.cache

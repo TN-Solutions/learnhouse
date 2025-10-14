@@ -45,14 +45,27 @@ if is_testing:
     )
 else:
     # Use configured database for production/development
+    # Add SSL configuration for Neon PostgreSQL
+    connect_args = {}
+    if "neon.tech" in learnhouse_config.database_config.sql_connection_string:
+        connect_args = {
+            "sslmode": "require",
+            "sslcert": None,
+            "sslkey": None,
+            "sslrootcert": None,
+            "sslcrl": None,
+            "connect_timeout": 60,
+        }
+    
     engine = create_engine(
         learnhouse_config.database_config.sql_connection_string,  # type: ignore
         echo=False, 
         pool_pre_ping=True,  # type: ignore
-        pool_size=20,  # Increased from 5 to handle more concurrent requests
-        max_overflow=10,  # Allow 10 additional connections beyond pool_size
+        pool_size=10,  # Reduced for cloud database
+        max_overflow=5,  # Reduced for cloud database
         pool_recycle=300,  # Recycle connections after 5 minutes
-        pool_timeout=30
+        pool_timeout=30,
+        connect_args=connect_args
     )
     
     # Add connection pool monitoring for debugging

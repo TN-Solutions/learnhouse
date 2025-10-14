@@ -4,35 +4,20 @@ from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.services.users.users import security_get_user
 from config.config import get_learnhouse_config
 from pydantic import BaseModel
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request
+from starlette import status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from src.services.dev.dev import isDevModeEnabled
 from src.services.users.users import security_verify_password
 from src.security.security import ALGORITHM, SECRET_KEY
-from fastapi_jwt_auth import AuthJWT
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 #### JWT Auth ####################################################
-class Settings(BaseModel):
-    authjwt_secret_key: str = "secret" if isDevModeEnabled() else SECRET_KEY
-    authjwt_token_location = {"cookies", "headers"}
-    authjwt_cookie_csrf_protect = False
-    authjwt_access_token_expires = (
-        False if isDevModeEnabled() else timedelta(hours=8).total_seconds()
-    )
-    authjwt_cookie_samesite = "lax"
-    authjwt_cookie_secure = True
-    authjwt_cookie_domain = get_learnhouse_config().hosting_config.cookie_config.domain
-
-
-@AuthJWT.load_config  # type: ignore
-def get_config():
-    return Settings()
-
 
 #### JWT Auth ####################################################
 
@@ -77,7 +62,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 async def get_current_user(
     request: Request,
-    Authorize: AuthJWT = Depends(),
+    token: str = Depends(oauth2_scheme),
     db_session: Session = Depends(get_db_session),
 ):
     credentials_exception = HTTPException(
@@ -87,15 +72,16 @@ async def get_current_user(
     )
 
     try:
-        Authorize.jwt_optional()
-        username = Authorize.get_jwt_subject() or None
-        token_data = TokenData(username=username)  # type: ignore
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str | None = payload.get("sub")
+        token_data = TokenData(username=username)
     except JWTError:
-        raise credentials_exception
+        return AnonymousUser()
+    
     if username:
         user = await security_get_user(request, db_session, email=token_data.username)  # type: ignore # treated as an email
         if user is None:
-            raise credentials_exception
+            return AnonymousUser()
         return PublicUser(**user.model_dump())
     else:
         return AnonymousUser()

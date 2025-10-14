@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from fastapi import HTTPException, Request
-from fastapi_jwt_auth import AuthJWT
 from sqlmodel import Session
 from src.security.auth import (
     authenticate_user,
@@ -10,7 +9,6 @@ from src.security.auth import (
     non_public_endpoint,
     Token,
     TokenData,
-    Settings,
 )
 from src.db.users import User, AnonymousUser, PublicUser
 from datetime import datetime, timedelta, timezone
@@ -63,18 +61,7 @@ class TestAuth:
         token_data = TokenData()
         assert token_data.username is None
 
-    def test_settings_model(self):
-        """Test Settings model"""
-        settings = Settings()
-        assert settings.authjwt_secret_key == "secret"  # Default in dev mode
-        assert settings.authjwt_token_location == {"cookies", "headers"}
-        assert settings.authjwt_cookie_csrf_protect is False
-        assert settings.authjwt_cookie_samesite == "lax"
-        assert settings.authjwt_cookie_secure is True
 
-    # Note: get_config is a decorator function for AuthJWT.load_config
-    # Testing it directly may not be appropriate in unit tests
-    pass
 
     @pytest.mark.asyncio
     async def test_authenticate_user_success(self, mock_request, mock_db_session, mock_user):

@@ -289,13 +289,12 @@ async def api_delete_org_users_invites(
 async def api_get_org_by_slug(
     request: Request,
     org_slug: str,
-    current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> OrganizationRead:
     """
     Get single Org by Slug
     """
-    return await get_organization_by_slug(request, org_slug, db_session, current_user)
+    return await get_organization_by_slug(request, org_slug, db_session, None)
 
 
 @router.get("/user/page/{page}/limit/{limit}")

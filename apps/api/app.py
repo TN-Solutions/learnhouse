@@ -7,7 +7,7 @@ from src.router import v1_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi_jwt_auth.exceptions import AuthJWTException
+
 from fastapi.middleware.gzip import GZipMiddleware
 
 
@@ -54,13 +54,7 @@ app.add_event_handler("startup", startup_app(app))
 app.add_event_handler("shutdown", shutdown_app(app))
 
 
-# JWT Exception Handler
-@app.exception_handler(AuthJWTException)
-def authjwt_exception_handler(request: Request, exc: AuthJWTException):
-    return JSONResponse(
-        status_code=exc.status_code,  # type: ignore
-        content={"detail": exc.message},  # type: ignore
-    )
+
 
 
 # Static Files - S3 storage serves files directly from S3, not through the API

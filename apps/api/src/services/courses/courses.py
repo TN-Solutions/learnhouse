@@ -184,7 +184,7 @@ async def get_course_meta(
 
 async def get_courses_orgslug(
     request: Request,
-    current_user: PublicUser | AnonymousUser,
+    current_user: PublicUser | AnonymousUser | None,
     org_slug: str,
     db_session: Session,
     page: int = 1,
@@ -199,7 +199,7 @@ async def get_courses_orgslug(
         .where(Organization.slug == org_slug)
     )
 
-    if isinstance(current_user, AnonymousUser):
+    if current_user is None or isinstance(current_user, AnonymousUser):
         # For anonymous users, only show public courses
         query = query.where(Course.public == True)
     else:

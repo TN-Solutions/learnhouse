@@ -83,9 +83,7 @@ async def api_read_assignment_from_activity(
     """
     Read an assignment
     """
-    return await read_assignment_from_activity_uuid(
-        request, activity_uuid, current_user, db_session
-    )
+    return await read_assignment_from_activity_uuid(request, activity_uuid, current_user, db_session)
 
 
 @router.put("/{assignment_uuid}")
@@ -99,9 +97,7 @@ async def api_update_assignment(
     """
     Update an assignment
     """
-    return await update_assignment(
-        request, assignment_uuid, assignment_object, current_user, db_session
-    )
+    return await update_assignment(request, assignment_uuid, assignment_object, current_user, db_session)
 
 
 @router.delete("/{assignment_uuid}")
@@ -127,9 +123,7 @@ async def api_delete_assignment_from_activity(
     """
     Delete an assignment
     """
-    return await delete_assignment_from_activity_uuid(
-        request, activity_uuid, current_user, db_session
-    )
+    return await delete_assignment_from_activity_uuid(request, activity_uuid, current_user, db_session)
 
 
 ## ASSIGNMENTS Tasks ##
@@ -146,9 +140,7 @@ async def api_create_assignment_tasks(
     """
     Create new tasks for an assignment
     """
-    return await create_assignment_task(
-        request, assignment_uuid, assignment_task_object, current_user, db_session
-    )
+    return await create_assignment_task(request, assignment_uuid, assignment_task_object, current_user, db_session)
 
 
 @router.get("/{assignment_uuid}/tasks")
@@ -161,9 +153,7 @@ async def api_read_assignment_tasks(
     """
     Read tasks for an assignment
     """
-    return await read_assignment_tasks(
-        request, assignment_uuid, current_user, db_session
-    )
+    return await read_assignment_tasks(request, assignment_uuid, current_user, db_session)
 
 
 @router.get("/task/{assignment_task_uuid}")
@@ -176,9 +166,7 @@ async def api_read_assignment_task(
     """
     Read task for an assignment
     """
-    return await read_assignment_task(
-        request, assignment_task_uuid, current_user, db_session
-    )
+    return await read_assignment_task(request, assignment_task_uuid, current_user, db_session)
 
 
 @router.put("/{assignment_uuid}/tasks/{assignment_task_uuid}")
@@ -192,9 +180,7 @@ async def api_update_assignment_tasks(
     """
     Update tasks for an assignment
     """
-    return await update_assignment_task(
-        request, assignment_task_uuid, assignment_task_object, current_user, db_session
-    )
+    return await update_assignment_task(request, assignment_task_uuid, assignment_task_object, current_user, db_session)
 
 
 @router.post("/{assignment_uuid}/tasks/{assignment_task_uuid}/ref_file")
@@ -208,9 +194,7 @@ async def api_put_assignment_task_ref_file(
     """
     Update tasks for an assignment
     """
-    return await put_assignment_task_reference_file(
-        request, db_session, assignment_task_uuid, current_user, reference_file
-    )
+    return await put_assignment_task_reference_file(request, db_session, assignment_task_uuid, current_user, reference_file)
 
 
 @router.post("/{assignment_uuid}/tasks/{assignment_task_uuid}/sub_file")
@@ -224,9 +208,7 @@ async def api_put_assignment_task_sub_file(
     """
     Update tasks for an assignment
     """
-    return await put_assignment_task_submission_file(
-        request, db_session, assignment_task_uuid, current_user, sub_file
-    )
+    return await put_assignment_task_submission_file(request, db_session, assignment_task_uuid, current_user, sub_file)
 
 
 @router.delete("/{assignment_uuid}/tasks/{assignment_task_uuid}")
@@ -239,9 +221,7 @@ async def api_delete_assignment_tasks(
     """
     Delete tasks for an assignment
     """
-    return await delete_assignment_task(
-        request, assignment_task_uuid, current_user, db_session
-    )
+    return await delete_assignment_task(request, assignment_task_uuid, current_user, db_session)
 
 
 ## ASSIGNMENTS Tasks Submissions ##
@@ -267,9 +247,7 @@ async def api_handle_assignment_task_submissions(
     )
 
 
-@router.get(
-    "/{assignment_uuid}/tasks/{assignment_task_uuid}/submissions/user/{user_id}"
-)
+@router.get("/{assignment_uuid}/tasks/{assignment_task_uuid}/submissions/user/{user_id}")
 async def api_read_user_assignment_task_submissions(
     request: Request,
     assignment_task_uuid: str,
@@ -280,9 +258,7 @@ async def api_read_user_assignment_task_submissions(
     """
     Read task submissions for an assignment from a user
     """
-    return await read_user_assignment_task_submissions(
-        request, assignment_task_uuid, user_id, current_user, db_session
-    )
+    return await read_user_assignment_task_submissions(request, assignment_task_uuid, user_id, current_user, db_session)
 
 
 @router.get("/{assignment_uuid}/tasks/{assignment_task_uuid}/submissions/me")
@@ -295,9 +271,7 @@ async def api_read_user_assignment_task_submissions_me(
     """
     Read task submissions for an assignment from a user
     """
-    result = await read_user_assignment_task_submissions_me(
-        request, assignment_task_uuid, current_user, db_session
-    )
+    result = await read_user_assignment_task_submissions_me(request, assignment_task_uuid, current_user, db_session)
     if result is None:
         # Return 404 if no submission exists (maintains current frontend behavior)
         raise HTTPException(
@@ -317,14 +291,10 @@ async def api_read_assignment_task_submissions(
     """
     Read task submissions for an assignment from a user
     """
-    return await read_assignment_task_submissions(
-        request, assignment_task_uuid, current_user, db_session
-    )
+    return await read_assignment_task_submissions(request, assignment_task_uuid, current_user, db_session)
 
 
-@router.delete(
-    "/{assignment_uuid}/tasks/{assignment_task_uuid}/submissions/{assignment_task_submission_uuid}"
-)
+@router.delete("/{assignment_uuid}/tasks/{assignment_task_uuid}/submissions/{assignment_task_submission_uuid}")
 async def api_delete_assignment_task_submissions(
     request: Request,
     assignment_task_submission_uuid: str,
@@ -334,9 +304,7 @@ async def api_delete_assignment_task_submissions(
     """
     Delete task submissions for an assignment from a user
     """
-    return await delete_assignment_task_submission(
-        request, assignment_task_submission_uuid, current_user, db_session
-    )
+    return await delete_assignment_task_submission(request, assignment_task_submission_uuid, current_user, db_session)
 
 
 ## ASSIGNMENTS Submissions ##
@@ -352,9 +320,7 @@ async def api_create_assignment_submissions(
     """
     Create new submissions for an assignment
     """
-    return await create_assignment_submission(
-        request, assignment_uuid, current_user, db_session
-    )
+    return await create_assignment_submission(request, assignment_uuid, current_user, db_session)
 
 
 @router.get("/{assignment_uuid}/submissions")
@@ -367,9 +333,7 @@ async def api_read_assignment_submissions(
     """
     Read submissions for an assignment
     """
-    return await read_assignment_submissions(
-        request, assignment_uuid, current_user, db_session
-    )
+    return await read_assignment_submissions(request, assignment_uuid, current_user, db_session)
 
 
 @router.get("/{assignment_uuid}/submissions/me")
@@ -382,9 +346,7 @@ async def api_read_user_assignment_submission_me(
     """
     Read submissions for an assignment from the current user
     """
-    return await read_user_assignment_submissions_me(
-        request, assignment_uuid, current_user, db_session
-    )
+    return await read_user_assignment_submissions_me(request, assignment_uuid, current_user, db_session)
 
 
 @router.get("/{assignment_uuid}/submissions/{user_id}")
@@ -398,9 +360,7 @@ async def api_read_user_assignment_submissions(
     """
     Read submissions for an assignment from a user
     """
-    return await read_user_assignment_submissions(
-        request, assignment_uuid, user_id, current_user, db_session
-    )
+    return await read_user_assignment_submissions(request, assignment_uuid, user_id, current_user, db_session)
 
 
 @router.put("/{assignment_uuid}/submissions/{user_id}")
@@ -415,9 +375,7 @@ async def api_update_user_assignment_submissions(
     """
     Update submissions for an assignment from a user
     """
-    return await update_assignment_submission(
-        request, user_id, assignment_submission, current_user, db_session
-    )
+    return await update_assignment_submission(request, user_id, assignment_submission, current_user, db_session)
 
 
 @router.delete("/{assignment_uuid}/submissions/{user_id}")
@@ -431,9 +389,7 @@ async def api_delete_user_assignment_submissions(
     """
     Delete submissions for an assignment from a user
     """
-    return await delete_assignment_submission(
-        request, user_id, assignment_uuid, current_user, db_session
-    )
+    return await delete_assignment_submission(request, user_id, assignment_uuid, current_user, db_session)
 
 
 @router.get("/{assignment_uuid}/submissions/{user_id}/grade")
@@ -448,9 +404,7 @@ async def api_get_submission_grade(
     Grade submissions for an assignment from a user
     """
 
-    return await get_grade_assignment_submission(
-        request, user_id, assignment_uuid, current_user, db_session
-    )
+    return await get_grade_assignment_submission(request, user_id, assignment_uuid, current_user, db_session)
 
 
 @router.post("/{assignment_uuid}/submissions/{user_id}/grade")
@@ -465,9 +419,7 @@ async def api_final_grade_submission(
     Grade submissions for an assignment from a user
     """
 
-    return await grade_assignment_submission(
-        request, user_id, assignment_uuid, current_user, db_session
-    )
+    return await grade_assignment_submission(request, user_id, assignment_uuid, current_user, db_session)
 
 
 @router.post("/{assignment_uuid}/submissions/{user_id}/done")
@@ -482,9 +434,7 @@ async def api_submission_mark_as_done(
     Grade submissions for an assignment from a user
     """
 
-    return await mark_activity_as_done_for_user(
-        request, user_id, assignment_uuid, current_user, db_session
-    )
+    return await mark_activity_as_done_for_user(request, user_id, assignment_uuid, current_user, db_session)
 
 
 @router.get("/course/{course_uuid}")
@@ -497,6 +447,4 @@ async def api_get_assignments(
     """
     Get assignments for a course
     """
-    return await get_assignments_from_course(
-        request, course_uuid, current_user, db_session
-    )
+    return await get_assignments_from_course(request, course_uuid, current_user, db_session)
